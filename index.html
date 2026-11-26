@@ -1,0 +1,1210 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1F3864">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>재고 스캐너</title>
+<style>
+:root{--navy:#1F3864;--blue:#2E75B6;--green:#2E7D32;--red:#C00000;--orange:#C55A11;--bg:#F3F5F9;--card:#fff;--line:#D5DAE3;--yel:#FFF2CC;--tx:#1b1f27}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1c212b;--line:#343b49;--yel:#4a4220;--tx:#e8ebf1}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;font-size:16px;padding-bottom:env(safe-area-inset-bottom)}
+header{background:var(--navy);color:#fff;padding:10px 10px;display:flex;align-items:center;gap:6px;position:sticky;top:0;z-index:5}
+header h1{font-size:15px;margin:0;flex:1;white-space:nowrap}
+header button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:8px 7px;font-size:12.5px;white-space:nowrap}
+@media (max-width:420px){header{gap:4px;padding:8px 6px}header button{padding:8px 5px;font-size:12px}header h1{font-size:14px}}@media (max-width:375px){#ver{display:none}}
+main{max-width:720px;margin:0 auto;padding:12px 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>label{flex:1 1 140px;font-size:12px;color:#6b7280}
+label input,label select{display:block;width:100%;margin-top:3px;padding:9px;border:1px solid var(--line);border-radius:8px;font-size:16px;background:var(--card);color:var(--tx)}
+button.btn{border:0;border-radius:10px;padding:11px 14px;font-size:15px;font-weight:600;color:#fff;background:var(--blue)}
+button.btn.g{background:var(--green)}button.btn.r{background:var(--red)}button.btn.gray{background:#6b7280}
+.small{font-size:13px;color:#6b7280}
+#scanBox{display:flex;gap:8px}
+#bc{flex:1;font-size:22px;padding:14px;border:2px solid var(--blue);border-radius:10px;background:var(--yel);color:var(--tx);min-width:0}
+#qty{width:84px;font-size:22px;padding:14px 6px;border:2px solid var(--line);border-radius:10px;text-align:center;background:var(--card);color:var(--tx)}
+#res{min-height:92px}
+#res .nm{font-size:20px;font-weight:700;word-break:break-all}
+.st{display:inline-block;padding:2px 10px;border-radius:99px;color:#fff;font-size:13px;margin-right:6px}
+.ok{background:var(--green)}.bk{background:var(--blue)}.no{background:var(--orange)}
+#res .nums{display:flex;gap:16px;margin-top:8px;font-size:15px}
+#res .nums b{font-size:20px}
+.diffp{color:var(--blue)}.diffm{color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+td.q{width:64px}td.q input{width:60px;padding:6px;font-size:15px;border:1px solid var(--line);border-radius:6px;text-align:center;background:var(--card);color:var(--tx)}
+td.x button{border:0;background:none;color:var(--red);font-size:20px;padding:0 6px}
+td.b{font-size:12px;color:#6b7280;word-break:break-all}
+.sum{display:flex;gap:14px;flex-wrap:wrap;font-weight:600;margin-bottom:6px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;z-index:20;max-width:90%;display:none}
+.hide{display:none}
+#cam{position:fixed;inset:0;background:#000;z-index:30;display:none}
+#cam.on{display:block}
+#camTop{position:absolute;left:0;right:0;top:0;z-index:3;display:flex;flex-wrap:wrap;gap:8px;row-gap:6px;align-items:center;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));background:rgba(0,0,0,.6);color:#fff;font-size:14px}
+#camTop b{order:1;flex:1 1 55%;min-width:0}
+#camTop button{border:0;border-radius:8px;padding:9px 14px;font-size:15px;font-weight:600;background:#C00000;color:#fff}
+#camClose{order:2}#camKeepL{order:3;white-space:nowrap}
+#camWrap{position:absolute;inset:0;overflow:hidden;background:#000}
+#vid{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;background:#000}
+#aim{position:absolute;left:8%;right:8%;top:38%;height:24%;border:2px solid #4cff7a;border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.35);pointer-events:none}
+#aim:after{content:"";position:absolute;left:4%;right:4%;top:50%;height:2px;background:#ff3b3b}
+#camRes{position:absolute;left:0;right:0;bottom:0;z-index:3;background:var(--card);color:var(--tx);padding:10px 14px calc(10px + env(safe-area-inset-bottom));max-height:40dvh;max-height:40vh;overflow:auto}
+#camRes .nm{font-size:19px;font-weight:700;word-break:break-all}
+#camRes .nums{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}
+#camMsg{position:absolute;left:0;right:0;bottom:80px;text-align:center;color:#fff;font-size:13px;text-shadow:0 0 4px #000;padding:0 12px}
+.hint{font-size:12px;color:var(--blue);margin-top:6px}
+.clk{cursor:pointer}
+@keyframes fl{0%{box-shadow:0 0 0 3px var(--blue);background:var(--yel)}100%{box-shadow:0 0 0 0 transparent}}
+#res.flash{animation:fl 1.2s ease-out}
+#pg{position:fixed;inset:0;background:var(--bg);z-index:40;display:none;overflow:auto}
+#pg.on{display:block}
+#pp{position:fixed;inset:0;background:var(--bg);z-index:27;display:none;overflow:auto}#pp.on{display:block}
+#ppTop{position:sticky;top:0;background:var(--navy);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;z-index:2}#ppTop b{flex:1;font-size:17px}#ppTop button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-size:15px}
+#ppBody{max-width:720px;margin:0 auto;padding:12px 14px 30px}
+.ppit{display:flex;gap:8px;align-items:center;padding:8px 2px;border-bottom:1px solid var(--line)}.ppit .t{flex:1;min-width:0;font-size:14px}.ppit .t b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ppit button{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--tx);font-size:18px;padding:0}.ppit .q{width:34px;text-align:center;font-weight:700}
+#ppPrint{display:none}
+@media print{@page{size:55mm 32mm;margin:0}body>*:not(#ppPrint){display:none!important}#ppPrint{display:block!important}#ppPrint img{display:block;width:55mm;height:32mm;page-break-after:always;break-after:page}}
+
+
+/* ---- 가격조회 (매장 가격 조회기 형식 / 태블릿 가로 2단) ---- */
+#pc{position:fixed;inset:0;background:var(--bg);z-index:27;display:none;flex-direction:column}#pc.on{display:flex}
+#pcTop{flex:none;background:var(--navy);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px}#pcTop b{flex:1;font-size:18px;white-space:nowrap}
+@media (max-width:560px){#pcTop{flex-wrap:wrap;gap:8px}.pcchip{order:5;flex:1 1 100%;text-align:center}}
+#pcTop button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-size:15px}
+.pcchip{background:rgba(255,255,255,.2);border-radius:99px;padding:4px 12px;font-size:13px;white-space:nowrap}
+#pcBody{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;padding:12px 14px 6px;width:100%;max-width:1400px;margin:0 auto}
+#pcL,#pcR{min-width:0}
+@media (min-width:860px){#pcBody{flex-direction:row;gap:14px;overflow:hidden}#pcL{flex:0 0 44%;overflow:auto}#pcR{flex:1;overflow:auto}}
+#pcBox{display:flex;gap:8px}
+#pcBc{flex:1;min-width:0;font-size:24px;padding:14px;border:2px solid var(--blue);border-radius:10px;background:var(--yel);color:var(--tx)}
+#pcBig{min-height:190px;display:flex;flex-direction:column;justify-content:center}
+#pcBig .nm{font-size:clamp(22px,3.2vw,38px);font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+#pcBig .bc{font-size:14px;color:#6b7280;margin-top:4px;overflow-wrap:anywhere}
+#pcBig .pr{font-size:clamp(56px,13vw,124px);font-weight:800;color:var(--navy);line-height:1.05;margin-top:6px;font-variant-numeric:tabular-nums}
+#pcBig .pr small{font-size:.36em;font-weight:700;margin-left:6px}
+#pcBig .warn{font-size:clamp(22px,3vw,34px);font-weight:700;color:var(--orange)}
+#pcBig .hint0{color:#6b7280;font-size:15px}
+@media (prefers-color-scheme:dark){#pcBig .pr{color:#9db8e8}}
+#pcR table{table-layout:auto}#pcR th{position:sticky;top:0;background:var(--card);z-index:1;font-size:13px;color:#6b7280}
+#pcR td{vertical-align:middle;font-size:15px}#pcR td.n,#pcR th.n{text-align:right;font-variant-numeric:tabular-nums}#pcR td.n{font-weight:700;font-size:17px;white-space:nowrap}
+#pcR td.bcc{font-size:13px;color:#6b7280;word-break:break-all}
+#pcR tr.miss td{background:rgba(197,90,17,.12)}
+#pcBar{flex:none;background:var(--navy);color:#fff;display:grid;grid-template-columns:auto 1fr;align-items:end;column-gap:22px;row-gap:2px;padding:8px 18px calc(8px + env(safe-area-inset-bottom))}
+#pcBar small{display:block;font-size:12px;opacity:.8}#pcBar b{font-size:clamp(24px,6vw,46px);font-variant-numeric:tabular-nums}#pcBar span{font-size:15px;margin-left:3px}
+#pcBar .pcs{text-align:right;display:block}#pcBar .xm{grid-column:1/-1;font-size:13px;color:#ffd7a8}#pcBar .xm:empty{display:none}
+#sp{position:fixed;inset:0;background:var(--bg);z-index:26;display:none;overflow:auto}#sp.on{display:block}#sp table{width:100%}#sp td{padding:5px 4px;vertical-align:middle}#sp td:first-child,#sp td:nth-child(2){white-space:nowrap}#sp input.rlin{display:inline-block!important;width:92px!important;text-align:right}#sp td.small{white-space:normal}
+#xp{position:fixed;inset:0;background:var(--bg);z-index:26;display:none;overflow:auto}#xp.on{display:block}
+label.xck{display:flex!important;flex-direction:row!important;align-items:center;gap:10px;font-size:15px;margin:10px 0;color:inherit}label.xck input{width:24px!important;height:24px!important;flex:none;margin:0;padding:0}#xp table{width:100%}#xp td.n,#xp th.n{text-align:right}
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.bgrid>*{min-width:0}
+.bgrid .btn,.bgrid label.btn{display:flex;align-items:center;justify-content:center;width:100%;height:46px;padding:0 8px;margin:0;white-space:nowrap;text-align:center;font-size:15px;line-height:1.1}
+.bgrid .full{grid-column:1/-1}
+label.btn{cursor:pointer;border-radius:10px;font-weight:600;color:#fff}
+.edin,.dcin{flex:1;min-width:0;font-size:17px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--tx)}
+.edin.chg,.dcin.chg{background:var(--yel)}
+.badge{display:inline-block;background:var(--orange);color:#fff;border-radius:99px;padding:2px 9px;font-size:12px;margin-left:6px}
+#pgTop,#xpTop,#spTop{position:sticky;top:0;background:var(--navy);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px}
+#pgTop b,#xpTop b,#spTop b{flex:1;font-size:17px}
+#pgTop button,#xpTop button,#spTop button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-size:15px}
+#pgBody,#xpBody,#spBody{max-width:720px;margin:0 auto;padding:12px 14px 30px}
+.fld{display:flex;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);align-items:baseline}
+.fld .k{flex:0 0 108px;font-size:13px;color:#6b7280}
+.fld .v{flex:1;font-size:17px;word-break:break-all}
+.fld .v.n{font-weight:700;font-variant-numeric:tabular-nums}
+.fld .v.e{color:#9aa1ad;font-size:14px}
+.sec{font-size:13px;font-weight:700;color:var(--navy);margin:14px 2px 4px}
+@media (prefers-color-scheme:dark){.sec{color:#9db8e8}}
+.chk{display:flex;gap:6px;align-items:center;font-size:13px;color:inherit}
+</style>
+</head>
+<body>
+<header><h1>재고 스캐너 <small id="ver" style="font-size:11px;font-weight:400;opacity:.7">v32</small></h1><button id="btnPc" style="background:var(--green)">가격조회</button><button id="btnPp" style="background:var(--orange)">가격POP</button><button id="btnXp" style="background:var(--blue)">내보내기</button><button id="btnSp" style="background:#546e7a">설정</button><button id="btnNew">새 작업</button></header>
+<main>
+<div class="card">
+  <div class="row">
+    <label>작업명<input id="job" placeholder="예) 매장 재고조사"></label>
+    <label>작업자<input id="worker" placeholder="이름"></label>
+    <label>일자<input id="date" type="date"></label>
+    <label>기본 수량<input id="defq" type="number" inputmode="numeric" value="1" min="0"></label>
+  </div>
+</div>
+
+<div class="card">
+  <div id="scanBox">
+    <input id="bc" placeholder="바코드 스캔 / 입력" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done">
+    <input id="qty" type="number" inputmode="numeric" placeholder="수량">
+  </div>
+  <div class="bgrid">
+    <button class="btn" id="btnAdd">추가</button>
+    <button class="btn gray" id="btnKb">화상 키보드 끄기</button>
+    <button class="btn" id="btnCam" style="background:var(--navy)">📷 카메라 스캔</button>
+    <button class="btn gray" id="btnUndo">마지막 삭제</button>
+  </div>
+  <div class="small" style="margin-top:6px">스캐너로 읽으면 자동 추가됩니다. 수량 칸이 비면 기본 수량으로 들어갑니다.</div>
+</div>
+
+<div class="card" id="res" data-o=""><div class="small">스캔하면 여기에 상품명과 수량 비교가 나옵니다.</div></div>
+
+<div class="card">
+  <div class="sum"><span id="sLines">0줄</span><span id="sKinds">0종류</span><span id="sQty">총 0개</span></div>
+  <table><thead><tr><th>#</th><th>상품 / 바코드</th><th>수량</th><th></th></tr></thead><tbody id="list"></tbody></table>
+  <div style="text-align:center;margin-top:8px"><button class="btn gray hide" id="btnMore">더 보기</button></div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <button class="btn g" id="btnExport">엑셀로 저장</button>
+    <button class="btn" id="btnShare">공유</button>
+  </div>
+  <div class="small" style="margin-top:6px">저장한 파일을 PC로 옮긴 뒤 재고관리의 [모바일 다운로드]로 선택하면 스캔입력에 들어갑니다.</div>
+</div>
+</main>
+<div id="cam"><div id="camTop"><b id="camTitle">카메라 바코드 스캔</b><label class="chk" id="camKeepL"><input type="checkbox" id="camKeep"> 카메라 스캔 계속하기</label><button id="camClose">닫기</button></div>
+<div id="camWrap"><video id="vid" playsinline muted></video><div id="aim"></div><div id="camMsg"></div></div>
+<div id="camRes"><div class="small">바코드를 초록 상자 안에 맞추세요.</div></div></div>
+<div id="sp"><div id="spTop"><button id="spBack">‹ 뒤로</button><b>설정</b></div><div id="spBody">
+<div class="card">
+  <b>불러온 자료</b><div class="small" id="dbinfo">불러온 자료 없음 (상품명 확인 없이 입력만 가능)</div>
+  <div class="bgrid"><label class="btn full" style="background:var(--blue)">모바일 파일 불러오기<input id="fileIn" type="file" accept=".xlsx" style="display:none"></label></div>
+  <div class="small" style="margin:8px 0 2px">PC 재고관리의 [모바일 생성]으로 만든 xlsx 파일을 고르세요. DB·DB_백업이 폰에 저장되어 다음부터는 오프라인으로 사용됩니다.</div>
+  <div class="small" style="margin-top:10px" id="edInfo">수정 0건</div>
+  <div class="bgrid" style="margin-top:4px"><button class="btn g" id="btnEdSave">수정 파일 저장</button><button class="btn" id="btnEdShare">수정 파일 공유</button></div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <label>조회할 자료<select id="srcSel"><option value="first">DB 우선 → 백업</option><option value="db">DB만</option><option value="bk">DB_백업만</option></select></label>
+    <label>대표 판매가 (조회·POP에 쓸 가격)<select id="priceSel"></select></label>
+    <label>가격조회 화면에 표시할 가격<select id="pcSel"></select></label>
+  </div>
+  <div class="small" style="margin-top:6px">바코드를 조회할 자료와, 판매가로 쓸 열(판매가 1~10 중 선택)을 고릅니다. 선택은 기억됩니다.</div>
+  <div class="row" style="margin-top:10px;flex-direction:column;align-items:stretch;gap:6px"><b style="font-size:13px">저장 폴더 (엑셀로 저장할 때)</b>
+    <div id="dirInfo" style="font-size:13px">기본: 다운로드 폴더</div>
+    <div class="row" style="gap:8px"><button class="btn" id="dirPick" type="button">폴더 지정</button><button class="btn" id="dirClear" type="button">기본으로</button></div>
+    <div style="font-size:11px;opacity:.7">Chrome 132 이상 안드로이드에서 됩니다. 다운로드 폴더 자체는 고를 수 없으니 새 폴더(예: 문서/재고스캐너)를 만들어 고르세요. 앱을 다시 켜면 권한 확인이 한 번 나올 수 있습니다.</div></div>
+  <div class="row" style="margin-top:10px"><label>바코드 기준 자리수 (0 = 검사 안 함)<input id="digSel" type="number" inputmode="numeric" min="0" max="30"></label></div>
+  <div class="small" style="margin-top:6px">기준과 다른 자리수를 스캔하면 크게 경보음이 울립니다. 소리 확인:</div>
+  <div class="bgrid" style="grid-template-columns:1fr 1fr 1fr"><button class="btn" id="tsOk" style="font-size:13px">정상 추가</button><button class="btn" id="tsNo" style="font-size:13px;background:var(--orange)">자료 없음</button><button class="btn r" id="tsDig" style="font-size:13px">자리수 오류</button></div>
+</div>
+
+<div class="card"><div class="sec" style="margin-top:0">앱할인가 (앱 전용)</div><div class="small">가격POP용으로 상품마다 정하는 할인가입니다. 폰에만 저장되며 PC 재고관리로 올리는 수정 파일·DB에는 들어가지 않습니다. 상품 수정 화면에서 입력하고, 아래 자동 계산(%)에도 포함할 수 있습니다.</div><div class="small" id="dcInfo" style="margin-top:6px"></div><div class="bgrid" style="margin-top:6px"><button class="btn gray" id="dcClear">앱할인가 전체 지우기</button></div></div>
+<div class="card" id="spRl"><div class="sec" style="margin-top:0">상품 수정 시 자동 계산 (%)</div>
+<div class="small">상품 수정·등록 화면에서 입고단가(매입가)를 입력하면 아래 %를 적용한 가격이 각 칸에 자동으로 들어갑니다. 들어간 뒤에도 숫자를 직접 고칠 수 있습니다. 비워 둔 가격은 자동 계산하지 않으며, 0%는 입력할 수 없습니다.</div>
+<div class="row" style="margin-top:8px"><label>계산 방식<select id="rlMode"><option value="markup">가산율 : 입고단가 × (1 + %)</option><option value="margin">마진율 : 입고단가 ÷ (1 − %)</option></select></label></div>
+<div class="row"><label>끝자리<select id="rlUnit"><option value="1">1원 단위</option><option value="10">10원 단위</option><option value="50">50원 단위</option><option value="100">100원 단위</option></select></label><label>처리<select id="rlRound"><option value="round">반올림</option><option value="ceil">올림</option><option value="floor">내림</option></select></label></div>
+<table id="rlTab" style="margin-top:6px"></table>
+<div class="small" id="rlEx" style="margin-top:6px"></div></div>
+</div></div>
+<div id="xp"><div id="xpTop"><button id="xpBack">‹ 뒤로</button><b>심포니 업로드 파일 만들기</b></div><div id="xpBody">
+<div class="card"><div class="sec" style="margin-top:0">현재 작업 요약</div><div id="xpSum" class="small"></div></div>
+<div class="card"><div class="sec" style="margin-top:0">설정</div>
+<div class="row"><label>매입가로 쓸 열<select id="xpCost"></select></label></div>
+<div class="small" style="margin:6px 0">불러온 DB(없으면 DB_백업)에서 이 열의 값을 매입가로 넣습니다. 자동 = 입고단가/매입단가.</div>
+<label class="xck"><input type="checkbox" id="xpNoData" checked><span>자료에 없는 바코드도 포함 (매입가는 빈 칸)</span></label>
+<label class="xck"><input type="checkbox" id="xpSkip0" checked><span>수량이 0 이하인 바코드는 제외</span></label>
+<div class="row"><label>파일 이름 앞부분 (작업명을 입력했으면 작업명_날짜_횟수로 저장되고, 작업명이 없을 때만 사용)<input id="xpName" placeholder="심포니업로드"></label></div></div>
+<div class="card"><div class="sec" style="margin-top:0">① 바코드 · 수량 (매입가 없음)</div>
+<div class="bgrid"><button class="btn g" id="xpS1">저장</button><button class="btn" id="xpH1">공유</button></div>
+<div class="sec">② 바코드 · 수량 · 매입가</div>
+<div class="bgrid"><button class="btn g" id="xpS2">저장</button><button class="btn" id="xpH2">공유</button></div>
+<div class="small" style="margin-top:8px">바코드는 문자로 저장되어 앞자리 0이 사라지지 않습니다. 저장한 파일을 심포니에 업로드하세요.</div></div>
+<div class="card"><div class="sec" style="margin-top:0">미리보기 (최대 30줄)</div><div style="overflow:auto"><table><thead><tr><th>바코드</th><th class="n">수량</th><th class="n">매입가</th></tr></thead><tbody id="xpList"></tbody></table></div></div>
+</div></div>
+<div id="pc"><div id="pcTop"><button id="pcBack">‹ 뒤로</button><b>가격조회</b><span class="pcchip" id="pcKindL"></span><button id="pcClr">목록 지우기</button></div>
+<div id="pcBody">
+<section id="pcL">
+  <div class="card"><div id="pcBox"><input id="pcBc" placeholder="바코드 스캔 / 입력" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done"><button class="btn" id="pcGo">조회</button></div>
+  <div class="bgrid"><button class="btn" id="pcCam" style="background:var(--navy)">📷 카메라 스캔</button><button class="btn gray" id="pcKb">화상 키보드 끄기</button></div></div>
+  <div class="card" id="pcBig"><div class="hint0">바코드를 스캔하면 품명과 가격이 크게 표시되고, 오른쪽(아래) 목록에 쌓입니다.</div></div>
+</section>
+<section id="pcR"><div class="card" style="padding:6px 8px">
+  <table><thead><tr><th>#</th><th>바코드</th><th>품명</th><th class="n" id="pcPH">판매가</th><th></th></tr></thead><tbody id="pcRows"></tbody></table></div></section>
+</div>
+<div id="pcBar"><div><small>제품수</small><b id="pcN">0</b><span>개</span></div><div class="pcs"><small>전체 합계 금액</small><b id="pcSum">0</b><span>원</span></div><div class="xm" id="pcX"></div></div></div>
+<div id="pp"><div id="ppTop"><button id="ppBack">‹ 뒤로</button><b>가격 POP 라벨 (55×32mm)</b></div><div id="ppBody">
+<div class="card"><div class="sec" style="margin-top:0">상품 담기</div>
+<div class="row"><label>바코드<input id="ppBc" placeholder="바코드 입력 후 담기" inputmode="numeric"></label></div>
+<div class="bgrid"><button class="btn" id="ppAdd">담기</button><button class="btn gray" id="ppAll">스캔 목록 모두 담기</button></div></div>
+<div class="card"><div class="sec" style="margin-top:0">출력할 상품 <span id="ppCnt" class="small"></span></div><div id="ppList"></div>
+<div class="bgrid"><button class="btn gray" id="ppClear">전체 비우기</button><button class="btn gray" id="ppQ1">장수 모두 1로</button></div></div>
+<div class="card"><div class="sec" style="margin-top:0">라벨 설정</div>
+<div class="row"><label>판매가로 쓸 열<select id="ppSale"></select></label><label>소비자가 열<select id="ppList2"></select></label></div>
+<label class="xck"><input type="checkbox" id="ppShowC"><span>소비자가 표시</span></label>
+<label class="xck"><input type="checkbox" id="ppStrike"><span>소비자가에 취소선</span></label>
+<label class="xck"><input type="checkbox" id="ppUseDisc"><span>앱할인가가 있는 상품은 할인가를 판매가 자리에, 기존 판매가는 취소선으로 표시</span></label>
+<label class="xck"><input type="checkbox" id="ppBar"><span>바코드 표시</span></label>
+<div class="row"><label>상품명 글자 크기<select id="ppFs"><option value="28">작게</option><option value="34">보통</option><option value="40">크게</option></select></label></div></div>
+<div class="card"><div class="sec" style="margin-top:0">미리보기</div><div style="text-align:center"><canvas id="ppCv" width="440" height="256" style="width:100%;max-width:440px;border:1px dashed #888;background:#fff;image-rendering:auto"></canvas></div><div class="small" id="ppPv" style="text-align:center;margin-top:4px"></div></div>
+<div class="card"><div class="sec" style="margin-top:0">A4 용지에 모아 인쇄 (일반 프린터 · PC)</div>
+<div class="small">55×32mm 라벨을 A4 한 장에 가로 3칸 × 세로 9칸(27칸)으로 순서대로 채웁니다. 이미지(PNG)나 PDF로 만들어 갤러리/PC로 보내 일반 프린터로 인쇄하세요.</div>
+<div class="row" style="margin-top:8px"><label>시작 칸 번호 (쓰던 용지 이어쓰기)<input id="ppStart" type="number" inputmode="numeric" min="1" max="27" value="1"></label></div>
+<label class="xck"><input type="checkbox" id="ppCut" checked><span>자르는 선 표시</span></label>
+<div style="text-align:center;margin:8px 0"><canvas id="ppA4" width="248" height="351" style="width:62%;border:1px solid #888;background:#fff"></canvas><div class="small" id="ppA4i"></div></div>
+<div class="bgrid"><button class="btn g" id="ppA4Png">A4 이미지 저장</button><button class="btn" id="ppA4PngS">A4 이미지 공유</button><button class="btn g" id="ppA4Pdf">A4 PDF 저장</button><button class="btn" id="ppA4PdfS">A4 PDF 공유</button></div>
+<div class="small" style="margin-top:8px">인쇄할 때는 <b>크기 100% / 실제 크기 / 여백 없음</b>으로 설정해야 55×32mm로 나옵니다. (맞춤·페이지에 맞추기를 켜면 크기가 달라집니다.) PC로 보내려면 [공유]에서 카카오톡·메일·드라이브 등을 고르세요.</div></div>
+<div class="card"><div class="sec" style="margin-top:0">블루투스 프린터 (안드로이드 · RawBT)</div>
+<div class="bgrid"><button class="btn g full" id="ppRaw">RawBT로 인쇄</button><button class="btn gray full" id="ppRawT">테스트 1장 (미리보기 라벨)</button></div>
+<div class="row" style="margin-top:8px"><label>라벨 용지 이동<select id="ppFeed"><option value="none">없음 (연속 용지)</option><option value="ff">라벨 이동 FF (갭/라벨)</option><option value="gsff">블랙마크 이동 GS FF</option><option value="lf3">3줄 띄우기</option></select></label><label>왼쪽 여백(점)<input id="ppPad" type="number" inputmode="numeric" min="0" max="300" value="0"></label></div>
+<div class="small" style="margin-top:8px">① 폰에 <b>RawBT</b> 앱(Play 스토어, 무료)을 설치하고 블루투스 프린터(SW_8E22)를 등록합니다. ② 이 버튼을 누르면 RawBT가 열리며 출력됩니다. 라벨이 어긋나면 [라벨 용지 이동]을 바꿔 가며 시험해 보세요. 6장씩 나눠 보냅니다.</div></div>
+<div class="card"><div class="sec" style="margin-top:0">출력</div>
+<div class="bgrid"><button class="btn g" id="ppPrintBtn">인쇄</button><button class="btn" id="ppShare">이미지 공유</button><button class="btn gray full" id="ppSave">이미지 저장</button></div>
+<div class="small" style="margin-top:8px">[인쇄]: 폰의 인쇄 화면이 열립니다(용지 55×32mm). 프린터가 목록에 없으면 [이미지 공유]로 프린터 앱에 넘기세요. 이미지는 장수만큼 만들어집니다.</div></div>
+</div></div>
+<div id="ppPrint"></div>
+<div id="pg"><div id="pgTop"><button id="pgBack">‹ 뒤로</button><b>상품 정보 (DB)</b></div><div id="pgBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+window.addEventListener("error",e=>{try{const t=document.getElementById("toast");if(t){t.textContent="오류: "+(e.message||"")+" (줄 "+(e.lineno||"?")+")";t.style.display="block";setTimeout(()=>t.style.display="none",8000)}}catch(x){}});
+
+"use strict";
+/* ---------- tiny helpers ---------- */
+const $=id=>document.getElementById(id);
+const enc=new TextEncoder(), dec=new TextDecoder("utf-8");
+function toast(t,ms=2200){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.display="none",ms)}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function unesc(s){return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(m,n)=>String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi,(m,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&amp;/g,"&")}
+function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+let DIG=13;
+function digBad(b){return DIG>0&&String(b).length!==DIG}
+function playSeq(seq){try{const a=beep.c||(beep.c=new (window.AudioContext||window.webkitAudioContext)());if(a.state==="suspended")a.resume();let t=a.currentTime+0.02;
+  for(const [f,ms,type,g] of seq){const o=a.createOscillator(),v=a.createGain();o.type=type||"sine";o.frequency.value=f;v.gain.setValueAtTime(0,t);v.gain.linearRampToValueAtTime(g,t+0.01);v.gain.setValueAtTime(g,t+ms/1000-0.015);v.gain.linearRampToValueAtTime(0,t+ms/1000);o.connect(v);v.connect(a.destination);o.start(t);o.stop(t+ms/1000+0.02);t+=ms/1000+(f===0?0:0.03)}}catch(e){}}
+function sound(kind){
+  if(kind==="ok"){playSeq([[1320,90,"sine",0.25]]);vib(30)}                                        // 정상 추가: 짧고 높은 '삑'
+  else if(kind==="nodata"){playSeq([[520,170,"triangle",0.5],[330,260,"triangle",0.5]]);vib([90,60,90])}   // 자료 없음: 낮아지는 '뚜-두'
+  else if(kind==="digit"){playSeq([[1900,200,"square",1],[950,200,"square",1],[1900,200,"square",1],[950,200,"square",1],[1900,200,"square",1],[950,300,"square",1]]);vib([400,100,400,100,400])}  // 자리수 오류: 크고 긴 경보
+}
+function beep(freq,ms){playSeq([[freq,ms,"sine",0.15]])}
+function feedback(b){const L=lookup(b);if(digBad(b))sound("digit");else if(L.st==="자료 없음")sound("nodata");else sound("ok")}
+function vib(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+
+/* ---------- minimal xlsx reader / writer (no libraries) ---------- */
+async function inflateRaw(u8){
+  const ds=new DecompressionStream("deflate-raw");
+  const w=ds.writable.getWriter(); w.write(u8); w.close();
+  return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+}
+/* 큰 파일: 파일 전체를 메모리에 올리지 않고 필요한 부분만 읽는 zip 리더 (Blob/File 용) */
+async function readZipBlob(file){
+  const size=file.size, tail=new Uint8Array(await file.slice(Math.max(0,size-70000),size).arrayBuffer()), tv=new DataView(tail.buffer);
+  let e=-1; for(let i=tail.length-22;i>=0;i--){if(tv.getUint32(i,true)===0x06054b50){e=i;break}}
+  if(e<0) throw new Error("xlsx 파일이 아닙니다");
+  const n=tv.getUint16(e+10,true), cdSize=tv.getUint32(e+12,true), cdOff=tv.getUint32(e+16,true);
+  const cd=new Uint8Array(await file.slice(cdOff,cdOff+cdSize).arrayBuffer()), dv=new DataView(cd.buffer), files={}; let p=0;
+  for(let i=0;i<n;i++){
+    if(p+46>cd.length||dv.getUint32(p,true)!==0x02014b50) break;
+    const method=dv.getUint16(p+10,true), csz=dv.getUint32(p+20,true), nl=dv.getUint16(p+28,true), el=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true), off=dv.getUint32(p+42,true);
+    const name=dec.decode(cd.subarray(p+46,p+46+nl)); p+=46+nl+el+cl;
+    files[name]={method,csz,off};
+  }
+  async function dataStart(f){const h=new DataView(await file.slice(f.off,f.off+30).arrayBuffer());return f.off+30+h.getUint16(26,true)+h.getUint16(28,true)}
+  async function get(name){const f=files[name]; if(!f) return null; const st=await dataStart(f); const raw=new Uint8Array(await file.slice(st,st+f.csz).arrayBuffer()); return f.method===0?raw:await inflateRaw(raw)}
+  async function* stream(name){
+    const f=files[name]; if(!f) return; const st=await dataStart(f), blob=file.slice(st,st+f.csz);
+    if(f.method===0){yield new Uint8Array(await blob.arrayBuffer());return}
+    const rd=blob.stream().pipeThrough(new DecompressionStream("deflate-raw")).getReader();
+    for(;;){const r=await rd.read(); if(r.done)break; yield r.value}}
+  return {names:Object.keys(files),get,stream};
+}
+async function readZip(buf){
+  if(typeof Blob!=="undefined"&&buf instanceof Blob&&Blob.prototype.stream&&typeof DecompressionStream!=="undefined")return readZipBlob(buf);
+  if(typeof Blob!=="undefined"&&buf instanceof Blob)buf=await buf.arrayBuffer();
+  const u8=new Uint8Array(buf), dv=new DataView(buf);
+  let e=-1; for(let i=u8.length-22;i>=Math.max(0,u8.length-70000);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break}}
+  if(e<0) throw new Error("xlsx 파일이 아닙니다");
+  const n=dv.getUint16(e+10,true); let p=dv.getUint32(e+16,true); const files={};
+  for(let i=0;i<n;i++){
+    if(dv.getUint32(p,true)!==0x02014b50) break;
+    const method=dv.getUint16(p+10,true), csz=dv.getUint32(p+20,true), nl=dv.getUint16(p+28,true), el=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true), off=dv.getUint32(p+42,true);
+    const name=dec.decode(u8.subarray(p+46,p+46+nl)); p+=46+nl+el+cl;
+    files[name]={method,csz,off};
+  }
+  async function get(name){
+    const f=files[name]; if(!f) return null;
+    const lnl=dv.getUint16(f.off+26,true), lel=dv.getUint16(f.off+28,true), s=f.off+30+lnl+lel;
+    const raw=u8.subarray(s,s+f.csz);
+    return f.method===0?raw:await inflateRaw(raw);
+  }
+  async function* stream(name){
+    const f=files[name]; if(!f) return;
+    const lnl=dv.getUint16(f.off+26,true), lel=dv.getUint16(f.off+28,true), st=f.off+30+lnl+lel;
+    const raw=u8.subarray(st,st+f.csz);
+    if(f.method===0){yield raw;return}
+    const ds=new DecompressionStream("deflate-raw"); const w=ds.writable.getWriter();
+    const pump=(async()=>{try{for(let i=0;i<raw.length;i+=262144)await w.write(raw.subarray(i,i+262144));await w.close()}catch(e){}})();
+    const rd=ds.readable.getReader();
+    for(;;){const r=await rd.read(); if(r.done)break; yield r.value}
+    await pump}
+  return {names:Object.keys(files),get,stream};
+}
+function colIdx(ref){let c=0;for(let i=0;i<ref.length;i++){const k=ref.charCodeAt(i);if(k<65)break;c=c*26+(k-64)}return c-1}
+function numStr(v){ // numeric cell -> text without exponent
+  if(/^-?\d+$/.test(v)) return v;
+  const n=Number(v); if(!isFinite(n)) return v;
+  return Number.isInteger(n)?n.toFixed(0):String(n);
+}
+function parseSheet(xml,sst,maxCols){
+  const rows=[]; const re=/<row\b[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g; let m;
+  while((m=re.exec(xml))){
+    const body=m[1]; const rr=/\br="(\d+)"/.exec(m[0]); const rn=rr?+rr[1]:rows.length+1;
+    const arr=[]; if(body){
+      const cre=/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g; let c;
+      while((c=cre.exec(body))){
+        const at=c[1], inner=c[2]; if(!inner) continue;
+        const ref=/\br="([A-Z]+)\d+"/.exec(at); if(!ref) continue;
+        const ci=colIdx(ref[1]); if(ci>=maxCols) continue;
+        const t=/\bt="(\w+)"/.exec(at); const ty=t?t[1]:"n"; let val="";
+        if(ty==="s"){const v=/<v>([\s\S]*?)<\/v>/.exec(inner); if(v) val=sst[+v[1]]||""}
+        else if(ty==="inlineStr"){const ts=inner.match(/<t\b[^>]*>([\s\S]*?)<\/t>/g)||[]; val=ts.map(x=>unesc(x.replace(/<[^>]+>/g,""))).join("")}
+        else{const v=/<v>([\s\S]*?)<\/v>/.exec(inner); if(v) val=ty==="str"||ty==="b"||ty==="e"?unesc(v[1]):numStr(v[1])}
+        arr[ci]=val;
+      }
+    }
+    rows[rn-1]=arr;
+  }
+  return rows;
+}
+async function readXlsx(buf,wanted,maxCols=12){
+  const z=await readZip(buf);
+  const wb=dec.decode(await z.get("xl/workbook.xml"));
+  const rels=dec.decode(await z.get("xl/_rels/workbook.xml.rels"));
+  const relMap={}; (rels.match(/<Relationship\b[^>]*>/g)||[]).forEach(r=>{const i=/Id="([^"]+)"/.exec(r),t=/Target="([^"]+)"/.exec(r);if(i&&t)relMap[i[1]]=t[1]});
+  const sheets=[]; (wb.match(/<sheet\b[^>]*>/g)||[]).forEach(s=>{const n=/name="([^"]*)"/.exec(s),r=/r:id="([^"]+)"/.exec(s);if(n&&r){let t=relMap[r[1]]||"";t=t.replace(/^\/?(xl\/)?/,"");sheets.push({name:unesc(n[1]),path:"xl/"+t})}});
+  let sst=[]; const sx=await z.get("xl/sharedStrings.xml");
+  if(sx){const s=dec.decode(sx); const sis=s.match(/<si\b[\s\S]*?<\/si>/g)||[]; sst=sis.map(si=>{const ts=si.match(/<t\b[^>]*>([\s\S]*?)<\/t>/g)||[];return unesc(ts.map(x=>x.replace(/<[^>]+>/g,"")).join(""))})}
+  const out={};
+  for(const sh of sheets){ if(wanted&&!wanted.includes(sh.name)) continue; const x=await z.get(sh.path); if(x) out[sh.name]=parseSheet(dec.decode(x),sst,maxCols); }
+  out.__order=sheets.map(s=>s.name);
+  return out;
+}
+/* 큰 파일(수십만 건)용: 압축을 풀면서 한 줄씩 처리 (통째로 문자열을 만들지 않음) */
+async function* zipText(z,name){const td=new TextDecoder("utf-8");for await(const u of z.stream(name)){const t=td.decode(u,{stream:true});if(t)yield t}const t=td.decode();if(t)yield t}
+function siText(x){if(!x)return "";const ts=x.match(/<t\b[^>]*>([\s\S]*?)<\/t>/g)||[];return unesc(ts.map(y=>y.replace(/<[^>]+>/g,"")).join(""))}
+async function streamSst(z){const sst=[];if(!z.names.includes("xl/sharedStrings.xml"))return sst;let buf="";
+  for await(const t of zipText(z,"xl/sharedStrings.xml")){buf+=t;const re=/<si\b[^>]*?(?:\/>|>([\s\S]*?)<\/si>)/g;let m,last=0;while((m=re.exec(buf))){sst.push(siText(m[1]));last=re.lastIndex}buf=last?buf.slice(last):buf}
+  return sst}
+function rowArr(body,sst,maxCols){const arr=[];if(!body)return arr;const cre=/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;let c;
+  while((c=cre.exec(body))){const at=c[1],inner=c[2];if(!inner)continue;const ref=/\br="([A-Z]+)\d+"/.exec(at);if(!ref)continue;const ci=colIdx(ref[1]);if(ci>=maxCols)continue;
+    const t=/\bt="(\w+)"/.exec(at);const ty=t?t[1]:"n";let val="";
+    if(ty==="s"){const v=/<v>([\s\S]*?)<\/v>/.exec(inner);if(v)val=sst[+v[1]]||""}
+    else if(ty==="inlineStr"){const ts=inner.match(/<t\b[^>]*>([\s\S]*?)<\/t>/g)||[];val=ts.map(x=>unesc(x.replace(/<[^>]+>/g,""))).join("")}
+    else{const v=/<v>([\s\S]*?)<\/v>/.exec(inner);if(v)val=ty==="str"||ty==="b"||ty==="e"?unesc(v[1]):numStr(v[1])}
+    arr[ci]=val}
+  return arr}
+async function readXlsxStream(buf,wanted,maxCols,onRow){
+  const z=await readZip(buf);
+  const wb=dec.decode(await z.get("xl/workbook.xml"));
+  const rels=dec.decode(await z.get("xl/_rels/workbook.xml.rels"));
+  const relMap={};(rels.match(/<Relationship\b[^>]*>/g)||[]).forEach(r=>{const i=/Id="([^"]+)"/.exec(r),t=/Target="([^"]+)"/.exec(r);if(i&&t)relMap[i[1]]=t[1]});
+  const sheets=[];(wb.match(/<sheet\b[^>]*>/g)||[]).forEach(s=>{const n=/name="([^"]*)"/.exec(s),r=/r:id="([^"]+)"/.exec(s);if(n&&r){let t=relMap[r[1]]||"";t=t.replace(/^\/?(xl\/)?/,"");sheets.push({name:unesc(n[1]),path:"xl/"+t})}});
+  const sst=await streamSst(z);
+  let ly=performance.now();
+  for(const sh of sheets){
+    if(wanted&&!wanted.includes(sh.name))continue; if(!z.names.includes(sh.path))continue;
+    let buf="",n=0;
+    for await(const t of zipText(z,sh.path)){
+      buf+=t;const re=/<row\b[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g;let m,last=0;
+      while((m=re.exec(buf))){const rr=/\br="(\d+)"/.exec(m[0].slice(0,80));const rn=rr?+rr[1]:++n;onRow(sh.name,rn,rowArr(m[1],sst,maxCols));last=re.lastIndex}
+      buf=last?buf.slice(last):buf;
+      if(performance.now()-ly>60){await new Promise(r=>setTimeout(r));ly=performance.now()}}
+  }
+  return sheets.map(s=>s.name)}
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(u8){let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=CRC[(c^u8[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function makeZip(entries){ // stored (no compression)
+  const parts=[],cen=[];let off=0;
+  const u16=n=>[n&255,(n>>8)&255],u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>>24)&255];
+  for(const [name,data] of entries){
+    const nb=enc.encode(name),crc=crc32(data);
+    const lh=new Uint8Array([0x50,0x4b,3,4,...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(data.length),...u32(data.length),...u16(nb.length),...u16(0)]);
+    parts.push(lh,nb,data);
+    cen.push(new Uint8Array([0x50,0x4b,1,2,...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(data.length),...u32(data.length),...u16(nb.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(off)]),nb);
+    off+=lh.length+nb.length+data.length;
+  }
+  let cs=0;cen.forEach(c=>cs+=c.length);
+  const end=new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...u16(entries.length),...u16(entries.length),...u32(cs),...u32(off),0,0]);
+  return new Blob([...parts,...cen,end],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+function colName(i){let s="";i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26)}return s}
+function buildXlsx(sheetName,rows,widths){ // rows: array of arrays; value types: string -> text, number -> numeric
+  let sd="";const SS=[],SI=new Map();const sid=t=>{if(!SI.has(t)){SI.set(t,SS.length);SS.push(t)}return SI.get(t)};
+  rows.forEach((r,ri)=>{ if(!r) return; let cells="";
+    r.forEach((v,ci)=>{ if(v===undefined||v===null||v==="") return; const ref=colName(ci)+(ri+1);
+      cells+= typeof v==="number" ? `<c r="${ref}"><v>${v}</v></c>` : `<c r="${ref}"${ci===0&&ri>0?' s="1"':""} t="s"><v>${sid(String(v))}</v></c>`; });
+    sd+=`<row r="${ri+1}">${cells}</row>`; });
+  const cols=widths?`<cols>${widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join("")}</cols>`:"";
+  const files=[
+   ["[Content_Types].xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/></Types>`],
+   ["_rels/.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+   ["xl/workbook.xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${esc(sheetName)}" sheetId="1" r:id="rId1"/></sheets></workbook>`],
+   ["xl/_rels/workbook.xml.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>`],
+   ["xl/styles.xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Malgun Gothic"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`],
+   ["xl/worksheets/sheet1.xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/>${cols}<sheetData>${sd}</sheetData></worksheet>`]
+  ,["xl/sharedStrings.xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${SS.length}" uniqueCount="${SS.length}">${SS.map(t=>`<si><t xml:space="preserve">${esc(t)}</t></si>`).join("")}</sst>`]].map(([n,x])=>[n,enc.encode(x)]);
+  return makeZip(files);
+}
+
+function buildXlsxMulti(sheets){
+  const sx=sheets.map(s=>{let sd="";
+    s.rows.forEach((r,ri)=>{if(!r)return;let cells="";
+      r.forEach((v,ci)=>{if(v===undefined||v===null||v==="")return;const ref=colName(ci)+(ri+1);
+        cells+=typeof v==="number"?`<c r="${ref}"><v>${v}</v></c>`:`<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`});
+      sd+=`<row r="${ri+1}">${cells}</row>`});
+    const cols=s.widths?`<cols>${s.widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join("")}</cols>`:"";
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${cols}<sheetData>${sd}</sheetData></worksheet>`});
+  const n=sheets.length;let ct="",rel="",sh="";
+  sheets.forEach((s,i)=>{ct+=`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`;rel+=`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`;sh+=`<sheet name="${esc(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`});
+  const files=[["[Content_Types].xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${ct}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+   ["_rels/.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+   ["xl/workbook.xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sh}</sheets></workbook>`],
+   ["xl/_rels/workbook.xml.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rel}<Relationship Id="rId${n+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+   ["xl/styles.xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Malgun Gothic"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>`]];
+  sx.forEach((x,i)=>files.push([`xl/worksheets/sheet${i+1}.xml`,x]));
+  return makeZip(files.map(([nm,x])=>[nm,enc.encode(x)]));
+}
+
+/* ---------- storage ---------- */
+const IDB={db:null,open(){return new Promise((res,rej)=>{const r=indexedDB.open("stockscan",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>{IDB.db=r.result;res()};r.onerror=()=>rej(r.error)})},
+ get(k){return new Promise((res,rej)=>{const t=IDB.db.transaction("kv").objectStore("kv").get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>rej(t.error)})},
+ del(k){return new Promise((res,rej)=>{const t=IDB.db.transaction("kv","readwrite");t.objectStore("kv").delete(k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})},
+ set(k,v){return new Promise((res,rej)=>{const t=IDB.db.transaction("kv","readwrite");t.objectStore("kv").put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}};
+
+/* 자료 보관: 한 줄을 문자열 하나로 압축해 둔다 (수십만 건에서도 메모리를 적게 쓰고 빠르게 조회) */
+const US="\x1f";
+class PM{constructor(){this.m=new Map()}
+  get size(){return this.m.size}
+  has(k){return this.m.has(k)}
+  get(k){const s=this.m.get(k);return s===undefined?undefined:s.split(US)}
+  set(k,a){const s=a.map(v=>v===undefined||v===null?"":String(v)).join(US);let e=s.length;while(e>0&&s.charCodeAt(e-1)===31)e--;this.m.set((" "+k).slice(1),e<s.length?s.slice(0,e):s)}   // 키는 새 문자열로 복사 (큰 파일 조각을 붙잡지 않게)
+  setRaw(k,s){this.m.set((" "+k).slice(1),s)}
+  raw(){return this.m.values()}
+  *[Symbol.iterator](){for(const [k,s] of this.m)yield [k,s.split(US)]}}
+let DBM=new PM(), BKM=new PM(), dbMeta=null;   // barcode -> [barcode,name,spec,cost,price,qty,...]
+const DEF_H=["바코드","상품명","규격","입고단가","판매가","입고수량"];
+let HDB=DEF_H.slice(), HBK=DEF_H.slice(0,5);
+function ensureCons(H){if(H.findIndex(x=>String(x).trim()==="소비자가")<0)H.push("소비자가")}
+const PRICE_NAMES=["소비자가","판매가 1","판매가 2","판매가 3","판매가 4","판매가 5","판매가 6","판매가 7","판매가 8","판매가 9","판매가 10"];
+function ensurePriceCols(){ensureCons(HDB);ensureCons(HBK);                 // 수정 화면에서 DB·DB_백업 모두 소비자가·판매가 1~10을 고칠 수 있게 한다
+  for(const H of [HDB,HBK])for(const n of PRICE_NAMES){if(H.findIndex(x=>String(x).trim()===n)<0)H.push(n)}}   // 소비자가 열은 DB·DB_백업 모두에 항상 있게 한다
+let SRC="first", PRICE="";                       // 조회 자료 / 표시할 가격(열 이름, ""=전체)
+function isPriceH(h){h=String(h||"");return /가|단가/.test(h)&&!/수량/.test(h)}
+function priceCols(){const s=new Map();[HDB,HBK].forEach(H=>H.forEach((h,i)=>{if(i>=2&&isPriceH(h)&&!s.has(String(h)))s.set(String(h),1)}));s.set(DISC,1);return [...s.keys()]}
+function fillPriceSel(){const sel=$("priceSel"),cols=priceCols();let h="";cols.forEach(c=>h+=`<option value="${esc(c)}">${esc(c)}</option>`);h+='<option value="*">전체 가격 표시</option>';sel.innerHTML=h;
+  if(PRICE==="*"||cols.includes(PRICE))sel.value=PRICE||"*";else{PRICE=cols.includes("판매가")?"판매가":(cols[0]||"*");sel.value=PRICE}pcFill()}
+function priceOf(L){ // -> [[이름,값],...]
+  const out=[];if(!L.row)return out;const H=L.st==="DB"?HDB:HBK;
+  H.forEach((h,i)=>{if(i>=2&&isPriceH(h)&&(PRICE==="*"||String(h)===PRICE)){const v=L.row[i];if(v!==undefined&&v!=="")out.push([String(h),v])}});
+  if(L.row&&(PRICE==="*"||PRICE===DISC)){const d=DCM.get(String(L.row[0]));if(d!==undefined)out.push([DISC,d])}
+  if(!out.length&&PRICE!=="*"&&L.row){/* 선택한 가격이 이 자료에 없음 */out.push([PRICE,"-"])}
+  return out}
+function fmtP(v){const n=Number(v);return isFinite(n)&&v!==""&&v!=="-"?n.toLocaleString():String(v)}
+let rows=[];                                     // [{b:barcode, q:number}]
+let cum=new Map();                               // barcode -> total
+let shown=100;
+
+function buildMaps(d){
+  DBM=new PM(); BKM=new PM();
+  for(const r of d.db){ if(r&&r[0]) DBM.set(r[0],r) }
+  for(const r of d.bk){ if(r&&r[0]) BKM.set(r[0],r) }
+}
+function info(){
+  $("dbinfo").textContent = dbMeta ? `DB ${DBM.size.toLocaleString()}건 · DB_백업 ${BKM.size.toLocaleString()}건 · ${dbMeta.file||""}` : "불러온 자료 없음 (상품명 확인 없이 입력만 가능)";
+}
+function lookup(b){
+  let r=SRC!=="bk"?DBM.get(b):null; if(r) return {st:"DB",row:r,name:r[1]||"",dbq:r[5]!==undefined&&r[5]!==""?Number(r[5]):null,price:r[4]};
+  r=SRC!=="db"?BKM.get(b):null; if(r) return {st:"DB_백업",row:r,name:r[1]||"",dbq:null,price:r[4]};
+  return {st:"자료 없음",name:"(자료에 없음)",dbq:null};
+}
+function save(){ try{localStorage.setItem("work",JSON.stringify({job:$("job").value,worker:$("worker").value,date:$("date").value,defq:$("defq").value,rows}))}catch(e){} }
+function load(){ try{const w=JSON.parse(localStorage.getItem("work")||"null"); if(w){$("job").value=w.job||"";$("worker").value=w.worker||"";$("date").value=w.date||today();$("defq").value=w.defq||1;rows=w.rows||[]}}catch(e){} if(!$("date").value) $("date").value=today(); recum(); }
+function recum(){cum=new Map();for(const r of rows)cum.set(r.b,(cum.get(r.b)||0)+r.q)}
+function defQty(){const n=Number($("defq").value);return isFinite(n)?n:1}
+
+function showResult(b){
+  const L=lookup(b), c=cum.get(b)||0; const cls=L.st==="DB"?"ok":L.st==="DB_백업"?"bk":"no";
+  let nums=`<span>누적 <b>${c}</b></span>`;
+  if(L.dbq!==null){const d=c-L.dbq;nums+=`<span>입고수량 <b>${L.dbq}</b></span><span>차이 <b class="${d>0?"diffp":d<0?"diffm":""}">${d>0?"+":""}${d}</b></span>`}
+  for(const [n,v] of priceOf(L)) nums+=`<span>${esc(n)} <b>${esc(fmtP(v))}</b></span>`;
+  $("res").dataset.o=b;
+  $("res").innerHTML=`${digBad(b)?`<div style="background:var(--red);color:#fff;border-radius:8px;padding:6px 10px;font-weight:700;margin-bottom:6px">⚠ 자리수 오류: ${String(b).length}자리 (기준 ${DIG}자리)</div>`:""}<div><span class="st ${cls}">${L.st}</span><span class="small">${esc(b)}</span></div><div class="nm">${esc(L.name)}</div><div class="nums">${nums}</div><div style="margin-top:10px"><button class="btn" data-more="1" style="width:100%;height:44px">상품 정보 보기 ›</button></div>`;
+}
+function camResult(b){
+  const L=lookup(b),c=cum.get(b)||0,cls=L.st==="DB"?"ok":L.st==="DB_백업"?"bk":"no";
+  let nums=`<span>누적 <b>${c}</b></span>`;
+  if(L.dbq!==null){const d=c-L.dbq;nums+=`<span>입고수량 <b>${L.dbq}</b></span><span>차이 <b class="${d>0?"diffp":d<0?"diffm":""}">${d>0?"+":""}${d}</b></span>`}
+  for(const [n,v] of priceOf(L))nums+=`<span>${esc(n)} <b>${esc(fmtP(v))}</b></span>`;
+  $("camRes").dataset.o=b;
+  $("camRes").innerHTML=`${digBad(b)?`<div style="background:var(--red);color:#fff;border-radius:8px;padding:6px 10px;font-weight:700;margin-bottom:6px">⚠ 자리수 오류: ${String(b).length}자리 (기준 ${DIG}자리)</div>`:""}<div><span class="st ${cls}">${L.st}</span><span class="small">${esc(b)}</span></div><div class="nm">${esc(L.name)}</div><div class="nums">${nums}</div><div style="margin-top:10px"><button class="btn" data-more="1" style="width:100%;height:44px">상품 정보 보기 ›</button></div>`}
+function render(){
+  const tb=$("list"); let h=""; const n=rows.length; const from=Math.max(0,n-shown);
+  for(let i=n-1;i>=from;i--){const r=rows[i],L=lookup(r.b);
+    h+=`<tr><td>${i+1}</td><td class="clk" data-o="${esc(r.b)}"><div>${esc(L.name)} <span style="color:var(--blue)">›</span></div><div class="b" style="${digBad(r.b)?"color:var(--red);font-weight:700":""}">${esc(r.b)} · ${L.st}${digBad(r.b)?" · 자리수 오류":""}</div></td><td class="q"><input type="number" inputmode="numeric" value="${r.q}" data-i="${i}"></td><td class="x"><button data-d="${i}" aria-label="삭제">✕</button></td></tr>`}
+  tb.innerHTML=h; $("btnMore").classList.toggle("hide",n<=shown);
+  let tot=0;for(const r of rows)tot+=r.q;
+  $("sLines").textContent=n+"줄";$("sKinds").textContent=cum.size+"종류";$("sQty").textContent="총 "+tot+"개";
+}
+function add(b,q){
+  b=String(b||"").trim(); if(!b) return;
+  if(q===undefined||q===""||q===null||isNaN(Number(q))) q=defQty(); else q=Number(q);
+  if(rows.length>=3000){toast("3,000줄까지만 입력할 수 있습니다. 저장 후 새 작업을 시작하세요.");return}
+  rows.push({b,q}); cum.set(b,(cum.get(b)||0)+q);
+  feedback(b);
+  lastB=b; showResult(b); render(); save();
+}
+function submit(){const v=$("bc").value; if(!v.trim())return; add(v,$("qty").value); $("bc").value="";$("qty").value="";$("bc").focus()}
+
+/* ---------- events ---------- */
+$("bc").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key==="Tab"){e.preventDefault();submit()}});
+$("btnAdd").onclick=submit;
+$("btnUndo").onclick=()=>{ if(!rows.length)return; const r=rows.pop(); recum(); render(); save(); toast("마지막 줄을 지웠습니다: "+r.b); $("bc").focus() };
+$("btnKb").onclick=()=>{const i=$("bc"); const off=i.getAttribute("inputmode")==="none"; if(off){i.removeAttribute("inputmode");$("btnKb").textContent="화상 키보드 끄기"}else{i.setAttribute("inputmode","none");$("btnKb").textContent="화상 키보드 켜기"} try{localStorage.setItem("kb",off?"on":"off")}catch(e){} i.blur();i.focus()};
+$("btnMore").onclick=()=>{shown+=200;render()};
+$("list").addEventListener("change",e=>{const i=e.target.dataset.i; if(i===undefined)return; const v=Number(e.target.value); rows[+i].q=isFinite(v)?v:0; recum(); render(); save()});
+$("list").addEventListener("click",e=>{const o=e.target.closest("[data-o]"); if(o){const bb=o.dataset.o;lastB=bb;showResult(bb);$("res").scrollIntoView({behavior:"smooth",block:"center"});$("res").classList.remove("flash");void $("res").offsetWidth;$("res").classList.add("flash");return} const d=e.target.dataset.d; if(d===undefined)return; if(!confirm("이 줄을 지울까요?"))return; rows.splice(+d,1); recum(); render(); save()});
+["job","worker","date","defq"].forEach(id=>$(id).addEventListener("input",save));
+$("btnNew").onclick=()=>{ if(rows.length&&!confirm("지금 작업 "+rows.length+"줄을 지우고 새로 시작할까요?\n(엑셀로 저장하지 않았다면 먼저 저장하세요)"))return; rows=[];recum();$("job").value="";render();save();$("res").dataset.o="";$("res").innerHTML='<div class="small">스캔하면 여기에 상품명과 수량 비교가 나옵니다.</div>';$("bc").focus()};
+
+$("fileIn").addEventListener("change",async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  if(EDLOG.length&&!confirm("앱에서 수정한 내용 "+EDLOG.length+"항목이 있습니다.\n새 파일을 불러오면 이 수정 내용은 사라집니다.\n(먼저 [수정 파일 저장]을 하셨나요?)\n\n계속 불러올까요?")){e.target.value="";return}
+  toast("파일을 읽는 중입니다...",600000);
+  try{
+    let hd=null,hb=null,scan=[],nd=0,nb=0;const tdb=new PM(),tbk=new PM();let Ld=6,Lb=5;
+    const fixRow=(a,L)=>{const n=Math.max(L,a.length),r=new Array(n);for(let i=0;i<n;i++){const v=a[i];r[i]=v===undefined||v===null?"":v}r[0]=String(r[0]).trim();return r};
+    const trim=a=>{a=a.map(x=>x===undefined||x===null?"":x);while(a.length&&a[a.length-1]==="")a.pop();return a};
+    await readXlsxStream(f,["DB","DB_백업","스캔"],30,(name,rn,a)=>{
+      if(name==="DB"){ if(rn===1){hd=trim(a).map(String);Ld=Math.max(hd.length,6);return} if(!a[0]&&a[0]!==0)return; const r=fixRow(a,Ld); if(!r[0])return; tdb.set(r[0],r); if(++nd%20000===0)toast("DB 읽는 중... "+nd.toLocaleString()+"건",600000) }
+      else if(name==="DB_백업"){ if(rn===1){hb=trim(a).map(String);Lb=Math.max(hb.length,5);return} if(!a[0]&&a[0]!==0)return; const r=fixRow(a,Lb); if(!r[0])return; tbk.set(r[0],r); if(++nb%20000===0)toast("DB_백업 읽는 중... "+nb.toLocaleString()+"건",600000) }
+      else if(name==="스캔"&&rn<=3)scan[rn]=a;
+    });
+    if(!tdb.size&&!tbk.size){toast("DB / DB_백업 시트를 찾지 못했습니다. PC에서 만든 모바일 파일인지 확인하세요.",4000);e.target.value="";return}
+    HDB=hd&&hd.length>=5?hd:DEF_H.slice(); HBK=hb&&hb.length>=5?hb:DEF_H.slice(0,5); ensurePriceCols();
+    DBM=tdb; BKM=tbk; EDR.clear(); EDLOG=[];
+    dbMeta={file:f.name,time:Date.now()};
+    toast("폰에 저장하는 중입니다... (자료가 많으면 잠시 걸립니다)",600000);
+    await saveAllData(); await IDB.set("edits",[]); edInfo(); fillPriceSel(); info(); spRender(); render();
+    const sc=scan[2]; // carry job/worker from the PC file when empty
+    if(sc){ const j=sc[1]||"", w=sc[5]||""; if(j&&!$("job").value)$("job").value=j; if(w&&!$("worker").value)$("worker").value=w; save() }
+    toast(`불러왔습니다: DB ${DBM.size.toLocaleString()}건, DB_백업 ${BKM.size.toLocaleString()}건`,4000);
+  }catch(err){toast("파일을 읽지 못했습니다: "+(err&&err.message||err),8000)}
+  e.target.value=""; $("bc").focus();
+});
+
+/* 내보내기 파일 이름: 작업명_날짜_횟수 (횟수 = 오늘 그 작업명으로 내보낸 번호). 작업명이 없으면 예전 이름 */
+function cleanJ(s){return String(s||"").replace(/[\\\/:*?"<>|]/g,"").trim()}
+function expLoad(){try{const o=JSON.parse(localStorage.getItem("expcnt")||"{}");if(o&&o.d===today()&&o.j)return o}catch(e){}return{d:today(),j:{}}}
+function expNext(){return (expLoad().j[cleanJ($("job").value)]||0)+1}
+function expBump(){try{const o=expLoad(),j=cleanJ($("job").value);o.j[j]=(o.j[j]||0)+1;localStorage.setItem("expcnt",JSON.stringify(o))}catch(e){}}
+function expBase(){const j=cleanJ($("job").value);if(!j)return "";return j+"_"+($("date").value||today()).replace(/-/g,"")+"_"+expNext()}
+function fname(){
+  const e=expBase(); if(e)return e+".xlsx";
+  const d=($("date").value||today()).replace(/-/g,""); const cl=cleanJ;
+  let n=d+"_모바일"; const w=cl($("worker").value); if(w)n+="_"+w; return n+".xlsx";
+}
+function makeBlob(){
+  const R=[]; R[0]=["모바일 스캔 (앱에서 저장)"]; R[1]=["작업명",$("job").value.trim(),"일자",$("date").value||today(),"작업자",$("worker").value.trim()];
+  R[2]=["※ 이 파일을 PC 재고관리의 [모바일 다운로드]로 선택하세요."];
+  R[3]=["번호","바코드 (여기에 입력)","수량","상품명","상태","DB 수량","누적수량","차이"];
+  rows.forEach((r,i)=>{const L=lookup(r.b),c=cum.get(r.b)||0; R[4+i]=[i+1,String(r.b),r.q,L.name==="(자료에 없음)"?"(자료에 없음)":L.name,L.st,L.dbq===null?"":L.dbq,c,L.dbq===null?"":c-L.dbq]});
+  return buildXlsx("스캔",R,[6,24,8,34,10,10,10,8]);
+}
+let DIRH=null;
+const DIROK=typeof window.showDirectoryPicker==="function";
+async function dirPerm(ask){if(!DIRH)return false;try{let p=await DIRH.queryPermission({mode:"readwrite"});if(p==="granted")return true;if(ask){p=await DIRH.requestPermission({mode:"readwrite"});return p==="granted"}}catch(e){}return false}
+function dirShow(){const e=$("dirInfo");if(!e)return;e.textContent=DIRH?"지정: "+DIRH.name+(" (저장할 때 이 폴더로 저장)"):"기본: 다운로드 폴더";const b=$("dirPick");if(b&&!DIROK){b.disabled=true;e.textContent="이 브라우저는 폴더 지정을 지원하지 않습니다 (기본: 다운로드 폴더)"}}
+async function dirLoad(){try{const h=await IDB.get("dir");if(h&&h.kind==="directory")DIRH=h}catch(e){}dirShow()}
+async function saveToDir(blob,name){
+  if(!DIRH)return false;
+  try{
+    if(!await dirPerm(true))return false;
+    const fh=await DIRH.getFileHandle(name,{create:true}),w=await fh.createWritable();await w.write(blob);await w.close();return true
+  }catch(e){return false}
+}
+function plainDownload(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+function download(blob,name){
+  if(!DIRH){plainDownload(blob,name);return}
+  saveToDir(blob,name).then(ok=>{if(ok)toast(DIRH.name+" 폴더에 저장했습니다: "+name,4000);else{plainDownload(blob,name);toast("폴더에 저장하지 못해 다운로드 폴더로 저장했습니다: "+name,4500)}})
+}
+function download_old(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+$("btnExport").onclick=()=>{ if(!rows.length){toast("저장할 스캔 내용이 없습니다.");return} const n=fname(); download(makeBlob(),n); expBump(); toast("엑셀 파일로 저장했습니다: "+n,3500) };
+$("btnShare").onclick=async()=>{ if(!rows.length){toast("공유할 스캔 내용이 없습니다.");return}
+  const n=fname(),f=new File([makeBlob()],n,{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){let ok=true;try{await navigator.share({files:[f],title:n})}catch(e){ok=false}if(ok)expBump()}else{download(f,n);expBump();toast("이 기기에서는 공유를 지원하지 않아 파일로 저장했습니다: "+n,3500)} };
+
+try{const d=localStorage.getItem("dig");if(d!==null&&d!==""&&isFinite(+d))DIG=+d}catch(e){}
+$("digSel").value=DIG;
+$("dirPick").onclick=async()=>{try{const h=await window.showDirectoryPicker({mode:"readwrite",id:"stockscan"});DIRH=h;await IDB.set("dir",h);dirShow();toast("저장 폴더를 지정했습니다: "+h.name,3000)}catch(e){if(e&&e.name!=="AbortError")toast("폴더를 지정하지 못했습니다: "+(e.message||e),4000)}};
+$("dirClear").onclick=async()=>{DIRH=null;try{await IDB.del("dir")}catch(e){}dirShow();toast("기본(다운로드 폴더)으로 되돌렸습니다.",2500)};
+$("digSel").addEventListener("input",()=>{const v=Number($("digSel").value);DIG=isFinite(v)&&v>=0?Math.floor(v):13;try{localStorage.setItem("dig",String(DIG))}catch(e){}});
+$("tsOk").onclick=()=>sound("ok");$("tsNo").onclick=()=>sound("nodata");$("tsDig").onclick=()=>sound("digit");
+$("srcSel").onchange=()=>{SRC=$("srcSel").value;try{localStorage.setItem("src",SRC)}catch(e){} render(); const b=lastB; if(b)showResult(b)};
+$("priceSel").onchange=()=>{PRICE=$("priceSel").value;try{localStorage.setItem("price",PRICE)}catch(e){} if(PRICE&&PRICE!=="*"){PS.sale=PRICE;ppSaveL()} if(lastB)showResult(lastB)};
+
+/* ---------- camera barcode ---------- */
+let lastB="";
+const EL=["3211","2221","2122","1411","1132","1231","1114","1312","1213","3112"];
+const PAR=["LLLLLL","LLGLGG","LLGGLG","LLGGGL","LGLLGG","LGGLLG","LGGGLL","LGLGLG","LGLGGL","LGGLGL"];
+function matchDigit(w,tot,sets){ // w: 4 run widths
+  const u=tot/7;let best=null,be=1e9;
+  for(const t of sets)for(let d=0;d<10;d++){const pat=t.k==="G"?EL[d].split("").reverse():EL[d].split("");let e=0;for(let i=0;i<4;i++){const x=w[i]/u-(+pat[i]);e+=x*x}if(e<be){be=e;best={d,k:t.k}}}
+  return be<1.2?best:null}
+function decodeRuns(R){ // R: run lengths starting with a dark run; need >=59
+  if(R.length<59)return null;
+  const u=(R[0]+R[1]+R[2])/3; if(u<1)return null;
+  for(let i=0;i<3;i++)if(R[i]/u<.5||R[i]/u>1.8)return null;
+  let pos=3,digs=[],kinds="";
+  for(let k=0;k<6;k++){const w=R.slice(pos,pos+4),tot=w[0]+w[1]+w[2]+w[3];if(Math.abs(tot/7/u-1)>.5)return null;const m=matchDigit(w,tot,[{k:"L"},{k:"G"}]);if(!m)return null;digs.push(m.d);kinds+=m.k;pos+=4}
+  for(let i=0;i<5;i++){const r=R[pos+i]/u;if(r<.5||r>1.8)return null}pos+=5;
+  for(let k=0;k<6;k++){const w=R.slice(pos,pos+4),tot=w[0]+w[1]+w[2]+w[3];if(Math.abs(tot/7/u-1)>.5)return null;const m=matchDigit(w,tot,[{k:"R"}]);if(!m)return null;digs.push(m.d);pos+=4}
+  const f=PAR.indexOf(kinds);if(f<0)return null;
+  const all=[f,...digs];let s=0;for(let i=0;i<12;i++)s+=all[i]*(i%2?3:1);if((10-s%10)%10!==all[12])return null;
+  return all.join("")}
+const C128="212222,222122,222221,121223,121322,131222,122213,122312,132212,221213,221312,231212,112232,122132,122231,113222,123122,123221,223211,221132,221231,213212,223112,312131,311222,321122,321221,312212,322112,322211,212123,212321,232121,111323,131123,131321,112313,132113,132311,211313,231113,231311,112133,112331,132131,113123,113321,133121,313121,211331,231131,213113,213311,213131,311123,311321,331121,312113,312311,332111,314111,221411,431111,111224,111422,121124,121421,141122,141221,112214,112412,122114,122411,142112,142211,241211,221114,413111,241112,134111,111242,121142,121241,114212,124112,124211,411212,421112,421211,212141,214121,412121,111143,111341,131141,114113,114311,411113,411311,113141,114131,311141,411131,211412,211214,211232".split(",").concat(["233111"]);
+const C39M={};"0:nnnwwnwnn|1:wnnwnnnnw|2:nnwwnnnnw|3:wnwwnnnnn|4:nnnwwnnnw|5:wnnwwnnnn|6:nnwwwnnnn|7:nnnwnnwnw|8:wnnwnnwnn|9:nnwwnnwnn|A:wnnnnwnnw|B:nnwnnwnnw|C:wnwnnwnnn|D:nnnnwwnnw|E:wnnnwwnnn|F:nnwnwwnnn|G:nnnnnwwnw|H:wnnnnwwnn|I:nnwnnwwnn|J:nnnnwwwnn|K:wnnnnnnww|L:nnwnnnnww|M:wnwnnnnwn|N:nnnnwnnww|O:wnnnwnnwn|P:nnwnwnnwn|Q:nnnnnnwww|R:wnnnnnwwn|S:nnwnnnwwn|T:nnnnwnwwn|U:wwnnnnnnw|V:nwwnnnnnw|W:wwwnnnnnn|X:nwnnwnnnw|Y:wwnnwnnnn|Z:nwwnwnnnn|-:nwnnnnwnw|.:wwnnnnwnn| :nwwnnnwnn|*:nwnnwnwnn|$:nwnwnwnnn|/:nwnwnnnwn|+:nwnnnwnwn|%:nnnwnwnwn".split("|").forEach(s=>{C39M[s.slice(2)]=s[0]});
+function m128(w){let T=0;for(let i=0;i<6;i++)T+=w[i];const u=T/11;if(u<.8)return -1;let best=-1,be=1e9;
+  for(let v=0;v<C128.length;v++){const p=C128[v];let e=0;for(let i=0;i<6;i++){const x=w[i]/u-(+p[i]);e+=x*x;if(e>=be)break}if(e<be){be=e;best=v}}
+  return be<1.6?best:-1}
+function dec128(A,i){
+  if(i+6*4+1>A.length)return null;
+  const st=m128(A.slice(i,i+6));if(st<103||st>105)return null;
+  let set=st===103?"A":st===104?"B":"C",pos=i+6,vals=[],sum=st,n=1,out="",stop=false;
+  while(pos+6<=A.length){const v=m128(A.slice(pos,pos+6));if(v<0)return null;pos+=6;
+    if(v===106){stop=true;break}
+    vals.push(v);}
+  if(!stop||vals.length<2)return null;
+  const chk=vals.pop();for(let k=0;k<vals.length;k++)sum+=vals[k]*(k+1);
+  if(sum%103!==chk)return null;
+  for(const v of vals){
+    if(set==="C"){if(v<100)out+=(v<10?"0":"")+v;else if(v===100)set="B";else if(v===101)set="A"}
+    else{if(v===99)set="C";else if(v===100){if(set==="A")set="B"}else if(v===101){if(set==="B")set="A"}
+      else if(v<96&&v>=0){out+=set==="A"&&v>=64?"":String.fromCharCode(32+v)}}}
+  return out.length?{c:out,weak:false}:null}
+function dec39(A,i){
+  let pos=i,out="",first=true;
+  for(;;){
+    if(pos+9>A.length)return null;
+    const w=A.slice(pos,pos+9),bars=[0,2,4,6,8].map(k=>w[k]),sps=[1,3,5,7].map(k=>w[k]);
+    const bs=bars.slice().sort((a,b)=>b-a),ss=sps.slice().sort((a,b)=>b-a);
+    if(bs[1]/bs[2]<1.25||ss[0]/ss[1]<1.25)return null;
+    const tb=(bs[1]+bs[2])/2,ts=(ss[0]+ss[1])/2;let pat="";for(let k=0;k<9;k++)pat+=(k%2?w[k]>ts:w[k]>tb)?"w":"n";
+    const ch=C39M[pat];if(!ch)return null;
+    if(first){if(ch!=="*")return null;first=false}
+    else if(ch==="*")return out.length>=2?{c:out,weak:true}:null;
+    else out+=ch;
+    pos+=9;
+    if(pos>=A.length)return null;
+    if(A[pos]>ts*1.3)return null; // inter-char gap must be narrow
+    pos++;
+    if(out.length>40)return null}}
+const ITF=["nnwwn","wnnnw","nwnnw","wwnnn","nnwnw","wnwnn","nwwnn","nnnww","wnnwn","nwnwn"];
+function itfDig(w){const s=w.slice().sort((a,b)=>b-a);if(s[1]/s[2]<1.4)return -1;const th=(s[1]+s[2])/2;let p="";for(const x of w)p+=x>th?"w":"n";return ITF.indexOf(p)}
+function decITF(A,i){
+  if(i+4>A.length)return null;
+  const u=(A[i]+A[i+1]+A[i+2]+A[i+3])/4;if(u<1)return null;
+  for(let k=0;k<4;k++)if(A[i+k]/u<.6||A[i+k]/u>1.5)return null;
+  let pos=i+4,out="";
+  for(;;){
+    if(pos+3<=A.length&&A[pos]/u>1.5&&A[pos+1]/u<1.45&&A[pos+2]/u<1.45&&(pos+3>=A.length||A[pos+3]/u>3.4||pos+13>A.length)&&out.length>=4)return out.length%2===0?{c:out,weak:true}:null;
+    if(pos+10>A.length)return null;
+    const b=[],sp=[];for(let k=0;k<5;k++){b.push(A[pos+2*k]);sp.push(A[pos+2*k+1])}
+    const d1=itfDig(b),d2=itfDig(sp);if(d1<0||d2<0)return null;out+=d1+""+d2;pos+=10;if(out.length>40)return null}}
+function dec8(A,i){
+  if(i+43>A.length)return null;const R=A.slice(i,i+43);
+  const u=(R[0]+R[1]+R[2])/3;if(u<1)return null;
+  for(let k=0;k<3;k++)if(R[k]/u<.5||R[k]/u>1.8)return null;
+  let pos=3,d=[];
+  for(let k=0;k<4;k++){const w=R.slice(pos,pos+4),t=w[0]+w[1]+w[2]+w[3];if(Math.abs(t/7/u-1)>.5)return null;const m=matchDigit(w,t,[{k:"L"}]);if(!m)return null;d.push(m.d);pos+=4}
+  for(let k=0;k<5;k++){const r=R[pos+k]/u;if(r<.5||r>1.8)return null}pos+=5;
+  for(let k=0;k<4;k++){const w=R.slice(pos,pos+4),t=w[0]+w[1]+w[2]+w[3];if(Math.abs(t/7/u-1)>.5)return null;const m=matchDigit(w,t,[{k:"R"}]);if(!m)return null;d.push(m.d);pos+=4}
+  let s=0;for(let k=0;k<7;k++)s+=d[k]*(k%2?1:3);if((10-s%10)%10!==d[7])return null;
+  return {c:d.join(""),weak:true}}
+function runsOf(g,n){
+  const B=16,nb=Math.ceil(n/B),mn=new Float32Array(nb),mx=new Float32Array(nb),thr=new Float32Array(n);
+  for(let j=0;j<nb;j++){let a=1e9,b=-1;for(let x=j*B;x<Math.min(n,j*B+B);x++){const v=g[x];if(v<a)a=v;if(v>b)b=v}mn[j]=a;mx[j]=b}
+  const K=Math.max(3,Math.round(n/B/8));
+  for(let j=0;j<nb;j++){let a=1e9,b=-1;for(let k=Math.max(0,j-K);k<=Math.min(nb-1,j+K);k++){if(mn[k]<a)a=mn[k];if(mx[k]>b)b=mx[k]}
+    const t=b-a>30?(a+b)/2:-1;for(let x=j*B;x<Math.min(n,j*B+B);x++)thr[x]=t}
+  const R=[],col=[];let st=g[0]<thr[0]?1:0,last=0;const st0=st;
+  for(let x=1;x<n;x++){const s=g[x]<thr[x]?1:0;if(s!==st){const d0=thr[x-1]-g[x-1],d1=thr[x]-g[x];let f=d0/(d0-d1);if(!(f>=0&&f<=1))f=.5;const e=x-1+f;R.push(e-last);col.push(st);last=e;st=s}}
+  R.push(n-last);col.push(st);
+  return [R,col]}
+function scanRuns(R,col){
+  for(const rev of [false,true]){const A=rev?R.slice().reverse():R,C=rev?col.slice().reverse():col;
+    for(let i=0;i<A.length;i++){if(C[i]!==1)continue;
+      if(i+59<=A.length){const r=decodeRuns(A.slice(i,i+59));if(r)return {c:r,weak:false}}
+      let r=dec128(A,i);if(r)return r;
+      r=dec8(A,i);if(r)return r;
+      r=dec39(A,i);if(r)return r;
+      r=decITF(A,i);if(r)return r}}
+  return null}
+function swDecode(cv){const W=cv.width,H=cv.height,ctx=cv.getContext("2d",{willReadFrequently:true});const d=ctx.getImageData(0,0,W,H).data;
+  const gr=new Float32Array(Math.max(W,H));
+  for(const f of [.5,.44,.56,.38,.62,.47,.53,.41,.59,.32,.68,.26,.74]){const y=Math.min(H-1,Math.floor(H*f));
+    for(let x=0;x<W;x++){let s=0;for(let j=-1;j<=1;j++){const yy=Math.max(0,Math.min(H-1,y+j)),o=(yy*W+x)*4;s+=d[o]*.3+d[o+1]*.59+d[o+2]*.11}gr[x]=s/3}
+    const [R,c]=runsOf(gr,W);const r=scanRuns(R,c);if(r)return r}
+  for(const f of [.5,.42,.58,.34,.66,.26,.74]){const x=Math.min(W-1,Math.floor(W*f));
+    for(let y=0;y<H;y++){let s=0;for(let j=-1;j<=1;j++){const xx=Math.max(0,Math.min(W-1,x+j)),o=(y*W+xx)*4;s+=d[o]*.3+d[o+1]*.59+d[o+2]*.11}gr[y]=s/3}
+    const [R,c]=runsOf(gr,H);const r=scanRuns(R,c);if(r)return r}
+  return null}
+let camCb=null,weakP={c:"",t:0},camStream=null,camOn=false,camDet=null,camLast={b:"",t:0};
+function camMsg(t){$("camMsg").textContent=t||""}
+async function camStart(){
+  try{const a=document.activeElement;if(a&&a.blur)a.blur()}catch(e){}   // 화상 키보드가 올라와 있으면 카메라 화면이 작아지므로 먼저 닫는다
+  $("cam").classList.add("on");camOn=true;camMsg("카메라를 켜는 중...");$("camRes").innerHTML='<div class="small">바코드를 초록 상자 안에 맞추세요.</div>';
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.isSecureContext){camMsg("");$("camRes").innerHTML='<div class="nm">카메라를 쓸 수 없습니다</div><div class="small">https:// 주소(또는 설치한 앱)에서만 카메라가 동작합니다. 파일을 직접 연 경우에는 Netlify 등 https 주소로 열어 주세요.</div>';return}
+  try{camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false})}
+  catch(e){camMsg("");$("camRes").innerHTML='<div class="nm">카메라 권한이 필요합니다</div><div class="small">'+esc(e&&e.name==="NotAllowedError"?"브라우저 설정에서 이 사이트의 카메라를 [허용]으로 바꾼 뒤 다시 눌러 주세요.":"카메라를 열지 못했습니다: "+(e&&e.message||e))+'</div>';return}
+  const v=$("vid");v.srcObject=camStream;try{await v.play()}catch(e){}
+  try{const tr=camStream.getVideoTracks()[0],cap=tr.getCapabilities&&tr.getCapabilities();if(cap&&cap.focusMode&&cap.focusMode.includes("continuous"))await tr.applyConstraints({advanced:[{focusMode:"continuous"}]})}catch(e){}
+  camDet=null;weakP={c:"",t:0};
+  camMsg("인식 중... (EAN-13·EAN-8·Code128·Code39)");camLoop()}
+function camStop(){camOn=false;camCb=null;$("camTitle").textContent="카메라 바코드 스캔";if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}$("vid").srcObject=null;$("cam").classList.remove("on")}
+async function camLoop(){
+  const v=$("vid"),cv=document.createElement("canvas");
+  while(camOn){
+    await new Promise(r=>setTimeout(r,camDet?90:130)); if(!camOn)break;
+    if(!v.videoWidth)continue; let code=null;
+    try{
+      if(camDet){const r=await camDet.detect(v);if(r&&r.length)code=r[0].rawValue}
+      if(!code){const sc=Math.min(1,1280/v.videoWidth);cv.width=Math.round(v.videoWidth*sc);cv.height=Math.round(v.videoHeight*sc);cv.getContext("2d",{willReadFrequently:true}).drawImage(v,0,0,cv.width,cv.height);const r=swDecode(cv);if(r){if(!r.weak)code=r.c;else{const n=Date.now();if(weakP.c===r.c&&n-weakP.t<2500)code=r.c;else weakP={c:r.c,t:n}}}}
+    }catch(e){}
+    if(code)camHit(String(code).trim())}}
+function camHit(b){
+  if(/^\d+$/.test(b)&&b.length<13&&!DBM.has(b)&&!BKM.has(b)){const p=b.padStart(13,"0");if(DBM.has(p)||BKM.has(p))b=p}
+  const now=Date.now();if(b===camLast.b&&now-camLast.t<2500)return;camLast={b,t:now};
+  // 재고 화면의 카메라 = 스캔 목록에 추가 / 가격조회 화면의 카메라 = 가격조회 목록에 담기.
+  // 기본은 한 번 인식하면 바로 닫고, [카메라 스캔 계속하기]를 체크했을 때만 열어 둔다.
+  const keep=$("camKeep").checked, cb=camCb;
+  if(!keep)camStop();
+  if(cb){cb(b);return}
+  lastB=b;
+  if(keep)camResult(b);
+  add(b,undefined)}
+try{$("camKeep").checked=localStorage.getItem("camKeep")==="1"}catch(e){}
+$("camKeep").addEventListener("change",()=>{try{localStorage.setItem("camKeep",$("camKeep").checked?"1":"0")}catch(e){}});
+$("btnCam").onclick=camStart; $("camClose").onclick=camStop;
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&camOn)camStop()});
+
+/* ---------- edit / modified file ---------- */
+let EDLOG=[];   // {t,type,st,b,name,field,old,nw}
+function edInfo(){const s=new Set(EDLOG.map(x=>x.b));$("edInfo").textContent=s.size?`수정 ${s.size}건 (변경 ${EDLOG.length}항목)`:"수정 0건";}
+function isEdited(b){return EDLOG.some(x=>x.b===b)}
+const DISC="앱할인가";   // 앱 전용 가격 (가격POP용). DB·수정 파일에는 들어가지 않고 폰에만 저장됩니다.
+let DCM=new Map();
+function dcNum(v){const n=Number(String(v).replace(/,/g,""));return isFinite(n)&&String(v).trim()!==""?n:null}
+async function dcSave(){try{await IDB.set("disc",[...DCM.entries()])}catch(e){toast("할인가 저장 오류: "+e.message,4000)}}
+const EDR=new Map();   // 앱에서 고친 줄 ("d|바코드" / "b|바코드" -> 줄)
+let CHN={nd:0,nb:0};const CHK=20000;
+async function saveAllData(){   // 새 파일을 불러왔을 때: 자료를 2만 건씩 나눠 저장 (수십만 건도 한 번에 터지지 않게)
+  const old=await IDB.get("meta2").catch(()=>null);
+  const wr=async(pre,M)=>{let i=0,buf=[];for(const r of M.raw()){buf.push(r);if(buf.length>=CHK){await IDB.set(pre+i,buf);i++;buf=[];toast("폰에 저장하는 중... "+pre.slice(0,2)+" "+(i*CHK).toLocaleString()+"건",600000)}}if(buf.length){await IDB.set(pre+i,buf);i++}return i};
+  const nd=await wr("db:",DBM),nb=await wr("bk:",BKM);
+  if(old){for(let i=nd;i<(old.nd||0);i++)await IDB.del("db:"+i);for(let i=nb;i<(old.nb||0);i++)await IDB.del("bk:"+i)}
+  CHN={nd,nb};await IDB.set("ovl",[]);await IDB.set("meta2",{meta:dbMeta,hdb:HDB,hbk:HBK,nd,nb});
+  try{await IDB.del("data")}catch(e){}}
+async function loadAllData(){
+  try{const dd=await IDB.get("disc");if(Array.isArray(dd))DCM=new Map(dd)}catch(e){}
+  const m=await IDB.get("meta2");
+  if(m){dbMeta=m.meta;if(m.hdb)HDB=m.hdb;if(m.hbk)HBK=m.hbk;CHN={nd:m.nd||0,nb:m.nb||0};DBM=new PM();BKM=new PM();
+    for(let i=0;i<CHN.nd;i++){const c=await IDB.get("db:"+i);if(c)for(const r of c)DBM.setRaw(r.slice(0,r.indexOf(US)<0?r.length:r.indexOf(US)),r);$("dbinfo").textContent="자료 불러오는 중... DB "+DBM.size.toLocaleString()+"건"}
+    for(let i=0;i<CHN.nb;i++){const c=await IDB.get("bk:"+i);if(c)for(const r of c)BKM.setRaw(r.slice(0,r.indexOf(US)<0?r.length:r.indexOf(US)),r)}
+    const ov=await IDB.get("ovl");if(Array.isArray(ov))for(const [k,r] of ov){EDR.set(k,r);(k[0]==="d"?DBM:BKM).set(k.slice(2),r)}
+    return true}
+  const d=await IDB.get("data");   // 예전 형식(v22 이하) → 새 형식으로 옮김
+  if(d){dbMeta=d.meta;buildMaps(d);if(d.hdb)HDB=d.hdb;if(d.hbk)HBK=d.hbk;ensurePriceCols();try{await saveAllData()}catch(e){}return true}
+  return false}
+async function persistData(){try{await IDB.set("ovl",[...EDR.entries()]);await IDB.set("meta2",{meta:dbMeta||{file:"(앱에서 입력)",time:Date.now()},hdb:HDB,hbk:HBK,nd:CHN.nd,nb:CHN.nb});await IDB.set("edits",EDLOG)}catch(e){toast("저장 중 오류: "+e.message,4000)}}
+function labelOf(h){h=String(h).trim();return h==="입고단가"?"입고가":h==="매입사"?"입고업체":h}
+function numish(h){return isPriceH(h)||/수량/.test(String(h))}
+function openEdit(b,isNew){
+  let st="DB",R=DBM.get(b);if(!R){R=BKM.get(b);st="DB_백업"}
+  const H=isNew?HBK:(st==="DB"?HDB:HBK);let h="";
+  if(H.findIndex(x=>String(x).trim()==="소비자가")<0)H.push("소비자가");
+  if(isNew){R=[b,"","","",""];st="DB_백업";h+=`<div class="card"><div class="nm" style="font-size:18px;font-weight:700">새 상품 등록 (DB_백업에 추가)</div><div class="small">상품명 등을 적고 [저장]을 누르세요. 비워 둬도 되는 칸은 비워 두세요.</div></div>`}
+  else h+=`<div class="card"><span class="st ${st==="DB"?"ok":"bk"}">${st}</span><span class="small">수정 중 — 바코드는 바꿀 수 없습니다</span></div>`;
+  h+=`<div class="card"><div class="fld"><div class="k">바코드</div><div class="v n">${esc(b)}</div></div>`;
+  const ord=H.map((_,i)=>i).filter(i=>i>0);const ci=H.findIndex(x=>String(x).trim()==="소비자가"),fp=ord.find(i=>/^판매가/.test(String(H[i]).trim())&&i!==ci);if(ci>0&&fp!==undefined){ord.splice(ord.indexOf(ci),1);ord.splice(ord.indexOf(fp),0,ci)}
+  ord.forEach(i=>{const x=H[i];const v=R[i]===undefined?"":R[i];h+=`<div class="fld"><div class="k">${esc(labelOf(x))}</div><input class="edin" data-i="${i}" data-o="${esc(v)}" value="${esc(v)}" ${numish(x)?'inputmode="decimal"':""}></div>`});
+  if(!isNew||true){const d=DCM.get(String(b));h+=`<div class="fld"><div class="k">${DISC}<br><span class="small">앱 전용 · PC로 안 올라감</span></div><input class="dcin" inputmode="decimal" data-o="${d===undefined?"":d}" value="${d===undefined?"":d}"></div>`}
+  const rlc=Object.keys(RL.pct).filter(c=>c===DISC||H.findIndex(x=>String(x).trim()===c)>=0);
+  if(rlc.length)h+=`<div class="small" style="margin-top:10px">자동 계산(%) : ${rlc.map(c=>esc(c)+" "+(RL.mode==="margin"?"마진 ":"+")+RL.pct[c]+"%").join(" · ")}<br>입고단가를 입력하면 자동으로 들어갑니다. 들어간 뒤에도 직접 고칠 수 있습니다.</div><button class="btn" id="edAuto" style="margin-top:6px">% 자동 계산 다시 적용</button>`;
+  else h+=`<div class="small" style="margin-top:10px">설정 화면에서 가격별 %를 정해 두면 입고단가 입력 시 자동 계산됩니다.</div>`;
+  h+=`<div class="row" style="margin-top:12px"><button class="btn g" id="edOk">저장</button><button class="btn gray" id="edCancel">취소</button></div></div>`;
+  $("pgBody").innerHTML=h;$("pg").classList.add("on");$("pg").scrollTop=0;
+  $("pgBody").querySelectorAll(".edin,.dcin").forEach(i=>i.addEventListener("input",()=>i.classList.toggle("chg",i.value!==i.dataset.o)));
+  $("edCancel").onclick=()=>openPage(b);
+  {const ic=colOf(H,NAMES.cost),cin=$("pgBody").querySelector(`.edin[data-i="${ic}"]`);
+   const auto=(say)=>{if(!cin)return;const cv=Number(String(cin.value).replace(/,/g,""));if(!(cv>0)){if(say)toast("입고단가를 먼저 입력하세요.");return}
+     let n=0;for(const c of Object.keys(RL.pct)){if(c===DISC)continue;const j=H.findIndex(x=>String(x).trim()===c);if(j<0)continue;const e=$("pgBody").querySelector(`.edin[data-i="${j}"]`);if(!e||j===ic)continue;e.value=String(calcPrice(cv,RL.pct[c]));e.classList.toggle("chg",e.value!==e.dataset.o);n++}
+     if(RL.pct[DISC]){const de=$("pgBody").querySelector(".dcin");if(de){de.value=String(calcPrice(cv,RL.pct[DISC]));de.classList.toggle("chg",de.value!==de.dataset.o);n++}}
+     if(say)toast(n?`${n}개 가격을 자동 계산했습니다.`:"설정에서 정한 %가 없습니다.")};
+   if(cin)cin.addEventListener("input",()=>auto(false));const ab=$("edAuto");if(ab)ab.onclick=()=>auto(true)}
+  $("edOk").onclick=async()=>{
+    const ins=[...$("pgBody").querySelectorAll(".edin")];let n=0;const t=Date.now();const row=R.slice();
+    for(const e of ins){const i=+e.dataset.i,o=e.dataset.o;let v=e.value.trim();if(v===o)continue;
+      if(numish(H[i])&&v!==""&&isFinite(Number(v.replace(/,/g,""))))v=Number(v.replace(/,/g,""));
+      if(numish(H[i])&&v!==""&&typeof v==="string"){toast(`${labelOf(H[i])}에는 숫자만 입력하세요.`,3000);return}
+      row[i]=v;EDLOG.push({t,type:isNew?"신규":"수정",st,b,name:row[1]||"",field:labelOf(H[i]),old:o,nw:v});n++}
+    let dchg=false;{const de=$("pgBody").querySelector(".dcin");if(de){const v=de.value.trim();if(v!==de.dataset.o){if(v===""){DCM.delete(String(b))}else{const nn=dcNum(v);if(nn===null||nn<0){toast("앱할인가에는 숫자만 입력하세요.",3000);return}DCM.set(String(b),nn)}dchg=true}}}
+    if(dchg)await dcSave();
+    if(isNew&&!n&&!dchg){toast("입력한 내용이 없습니다.");return}
+    if(!n){if(dchg){toast("앱할인가를 저장했습니다.");showResult(b);openPage(b)}else{toast("바뀐 내용이 없습니다.");openPage(b)}return}
+    while(row.length<H.length)row.push("");
+    (st==="DB"?DBM:BKM).set(b,row);EDR.set((st==="DB"?"d|":"b|")+b,row);edInfo();info();render();await persistData();
+    if(!dbMeta){dbMeta={file:"(앱에서 입력)",time:t};info()}
+    toast(isNew?"새 상품을 등록했습니다.":`${n}개 항목을 수정했습니다.`);showResult(b);openPage(b)}}
+function makeEditBlob(){
+  const hd=HDB.length?HDB:DEF_H,hk=HBK.length?HBK:DEF_H.slice(0,5);
+  const fx=(r,H)=>{const o=r.slice(0,H.length);while(o.length<H.length)o.push("");for(let i=1;i<o.length;i++){const v=o[i];if(typeof v==="string"&&v.trim()!==""&&numish(H[i])&&isFinite(Number(v.replace(/,/g,""))))o[i]=Number(v.replace(/,/g,""))}return o};
+  const big=DBM.size+BKM.size>30000, eb=new Set(EDLOG.map(x=>String(x.b)));
+  const dbR=[hd.slice()],bkR=[hk.slice()];
+  if(big){for(const k of eb){const a=DBM.get(k);if(a)dbR.push(fx(a,hd));const c=BKM.get(k);if(c)bkR.push(fx(c,hk))}}
+  else{for(const [k,r] of DBM)dbR.push(fx(r,hd));for(const [k,r] of BKM)bkR.push(fx(r,hk))}
+  const lg=[["수정일시","구분","자료","바코드","상품명","항목","수정 전","수정 후"]];
+  for(const x of EDLOG){const d=new Date(x.t);lg.push([today()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"),x.type,x.st,String(x.b),x.name,x.field,x.old===""?"":(isFinite(Number(x.old))&&x.old!==""?Number(x.old):x.old),x.nw])}
+  const info=[["앱에서 수정한 파일"],["작업자",$("worker").value.trim(),"일자",$("date").value||today()],[(DBM.size+BKM.size>30000)?"※ 자료가 많아 DB·DB_백업 시트에는 앱에서 고친 상품만 들어 있습니다. PC에서 DB로 붙여넣고 [DB_백업에 저장]하면 해당 상품만 갱신됩니다.":"※ DB·DB_백업 시트는 수정이 반영된 전체 자료입니다. 수정내역 시트는 바뀐 항목만 모은 것입니다."]];
+  return buildXlsxMulti([{name:"DB",rows:dbR,widths:hd.map((x,i)=>i===1?30:i===0?16:11)},{name:"DB_백업",rows:bkR,widths:hk.map((x,i)=>i===1?30:i===0?16:11)},{name:"수정내역",rows:lg,widths:[17,7,9,16,28,12,14,14]},{name:"스캔",rows:info,widths:[18,18,8,14]}])}
+function edName(){return (($("date").value||today()).replace(/-/g,""))+"_재고자료_수정.xlsx"}
+$("btnEdSave").onclick=()=>{if(!EDLOG.length){toast("수정한 내용이 없습니다.");return}download(makeEditBlob(),edName());toast("수정 파일로 저장했습니다: "+edName(),3500)};
+$("btnEdShare").onclick=async()=>{if(!EDLOG.length){toast("수정한 내용이 없습니다.");return}
+  const f=new File([makeEditBlob()],edName(),{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:edName()})}catch(e){}}else{download(f,edName());toast("이 기기에서는 공유를 지원하지 않아 파일로 저장했습니다.",3500)}};
+
+
+/* ---------- 설정 페이지 / 자동 계산(%) ---------- */
+let RL={mode:"markup",unit:10,round:"round",pct:{}};
+try{const x=JSON.parse(localStorage.getItem("rules")||"{}");if(x&&typeof x==="object")RL=Object.assign(RL,x);if(!RL.pct||typeof RL.pct!=="object")RL.pct={}}catch(e){}
+function rlSave(){try{localStorage.setItem("rules",JSON.stringify(RL))}catch(e){}}
+function tgtCols(){const s=[...PRICE_NAMES,DISC];for(const H of [HDB,HBK])H.forEach((h,i)=>{h=String(h).trim();if(i>=2&&/^판매가$/.test(h)&&!s.includes(h))s.push(h)});return s}
+function calcPrice(cost,pct){let v=RL.mode==="margin"?cost/(1-pct/100):cost*(1+pct/100);const u=Number(RL.unit)||1;v=RL.round==="ceil"?Math.ceil(v/u-1e-9)*u:RL.round==="floor"?Math.floor(v/u+1e-9)*u:Math.round(v/u)*u;return v}
+function rlOk(n){return isFinite(n)&&n>0&&(RL.mode!=="margin"||n<100)}
+function dcInfo(){$("dcInfo").textContent=`저장된 앱할인가 ${DCM.size.toLocaleString()}건`}
+$("dcClear").onclick=async()=>{if(!DCM.size){toast("지울 할인가가 없습니다.");return}if(!confirm("앱할인가 "+DCM.size+"건을 모두 지울까요?"))return;DCM=new Map();await dcSave();dcInfo();toast("앱할인가를 모두 지웠습니다.")};
+function spRender(){dcInfo();
+  $("rlMode").value=RL.mode;$("rlUnit").value=String(RL.unit);$("rlRound").value=RL.round;
+  $("rlTab").innerHTML=tgtCols().map(c=>{const p=RL.pct[c];return `<tr><td><b>${esc(c)}</b></td><td><input class="rlin" data-c="${esc(c)}" type="number" inputmode="decimal" step="0.1" placeholder="사용 안 함" value="${p===undefined?"":p}"> %</td><td class="small" data-ex="${esc(c)}"></td></tr>`}).join("");
+  spEx()}
+function spEx(){const cost=1000;document.querySelectorAll("#rlTab td[data-ex]").forEach(td=>{const p=RL.pct[td.dataset.ex];td.textContent=p?`예) 입고단가 ${cost.toLocaleString()}원 → ${calcPrice(cost,p).toLocaleString()}원`:""});
+  const n=Object.keys(RL.pct).length;$("rlEx").textContent=n?`지금 ${n}개 가격에 자동 계산이 적용됩니다. (0%는 입력할 수 없고, 비우면 해제됩니다)`:"아직 정한 %가 없습니다. 칸에 숫자를 넣으면 상품 수정 때 자동으로 계산됩니다."}
+$("rlTab").addEventListener("change",e=>{const t=e.target;if(!t.classList.contains("rlin"))return;const c=t.dataset.c,v=t.value.trim();
+  if(v===""){delete RL.pct[c]}
+  else{const n=Number(v);if(!rlOk(n)){toast(n===0?"0%는 입력할 수 없습니다. (사용하지 않으려면 비워 두세요)":RL.mode==="margin"&&n>=100?"마진율은 100% 미만으로 입력하세요.":"0보다 큰 숫자를 입력하세요.",3500);t.value=RL.pct[c]===undefined?"":RL.pct[c];return}RL.pct[c]=n}
+  rlSave();spEx()});
+$("rlMode").onchange=()=>{RL.mode=$("rlMode").value;if(RL.mode==="margin"){for(const c of Object.keys(RL.pct))if(RL.pct[c]>=100){delete RL.pct[c]}}rlSave();spRender()};
+$("rlUnit").onchange=()=>{RL.unit=Number($("rlUnit").value);rlSave();spEx()};
+$("rlRound").onchange=()=>{RL.round=$("rlRound").value;rlSave();spEx()};
+$("btnSp").onclick=()=>{spRender();info();edInfo();$("sp").classList.add("on");$("sp").scrollTop=0};
+$("spBack").onclick=()=>{$("sp").classList.remove("on");$("bc").focus()};
+
+/* ---------- symphony export page ---------- */
+let XS={name:"심포니업로드",costCol:"auto",noData:true,skip0:true};
+try{Object.assign(XS,JSON.parse(localStorage.getItem("xs")||"{}"))}catch(e){}
+function xsSave(){try{localStorage.setItem("xs",JSON.stringify(XS))}catch(e){}}
+function xCostOf(b){
+  const sv=SRC;SRC="first";const L=lookup(b);SRC=sv;if(!L.row)return null;
+  const H=L.st==="DB"?HDB:HBK;let i;
+  if(XS.costCol==="auto")i=colOf(H,NAMES.cost);else i=H.findIndex(x=>String(x).trim()===XS.costCol);
+  if(i<0&&XS.costCol!=="auto"){}
+  if(i<0)return {nd:false,v:""};
+  let v=L.row[i];if(v===undefined||v===null||v==="")return {nd:false,v:""};
+  const n=Number(String(v).replace(/,/g,""));return {nd:false,v:isFinite(n)?n:""}}
+function xRows(){
+  const m=new Map();for(const r of rows)m.set(r.b,(m.get(r.b)||0)+r.q);
+  const out=[];let nodata=0,nocost=0,zero=0;
+  for(const [b,q] of m){
+    if(XS.skip0&&!(q>0)){zero++;continue}
+    const c=xCostOf(b);
+    if(c===null){nodata++;if(!XS.noData)continue;out.push([String(b),q,""])}
+    else{if(c.v==="")nocost++;out.push([String(b),q,c.v])}}
+  return {out,nodata,nocost,zero,kinds:m.size}}
+function xRefresh(){
+  const o=$("xpCost");const cur=XS.costCol;let opt='<option value="auto">자동 (입고단가)</option>';
+  const seen=new Set();for(const H of [HDB,HBK])(H||[]).forEach((x,i)=>{x=String(x).trim();if(i===0||!x||seen.has(x))return;seen.add(x);opt+=`<option value="${esc(x)}">${esc(x)}</option>`});
+  o.innerHTML=opt;o.value=cur;if(o.value!==cur){o.value="auto";XS.costCol="auto"}
+  $("xpNoData").checked=XS.noData;$("xpSkip0").checked=XS.skip0;$("xpName").value=XS.name==="심포니업로드"?"":XS.name;
+  const R=xRows(),tq=R.out.reduce((a,x)=>a+x[1],0);
+  $("xpSum").innerHTML=`작업: <b>${esc($("job").value||"(이름 없음)")}</b> / ${esc($("date").value||today())}<br>저장될 파일 이름: <b>${esc(xName(false))}</b>${cleanJ($("job").value)?"":" (작업명을 입력하면 작업명_날짜_횟수로 저장됩니다)"}<br>스캔 ${rows.length}줄 → 파일에 들어갈 상품 <b>${R.out.length}종류 / 총 ${tq.toLocaleString()}개</b>`+
+   (R.nodata?`<br>⚠ 자료에 없는 바코드 ${R.nodata}종류${XS.noData?" (포함됨, 매입가 빈 칸)":" (제외됨)"}`:"")+(R.nocost?`<br>⚠ 매입가가 비어 있는 상품 ${R.nocost}종류`:"")+(R.zero?`<br>수량 0 이하로 제외 ${R.zero}종류`:"");
+  $("xpList").innerHTML=R.out.slice(0,30).map(x=>`<tr><td>${esc(x[0])}</td><td class="n">${x[1]}</td><td class="n">${x[2]===""?"-":fmtP(x[2])}</td></tr>`).join("")||'<tr><td colspan="3" class="small">스캔한 내용이 없습니다.</td></tr>'}
+function xName(withCost){const e=expBase();if(e)return e+".xlsx";const d=($("date").value||today()).replace(/-/g,"");const base=(XS.name||"심포니업로드").replace(/[\\\/:*?"<>|]/g,"").trim()||"심포니업로드";return base+(withCost?"_매입가포함":"")+"_"+d+".xlsx"}
+function xBlob(withCost){const R=xRows().out;
+  const T=[withCost?["바코드","수량","매입가"]:["바코드","수량"]];for(const x of R)T.push(withCost?[x[0],x[1],x[2]]:[x[0],x[1]]);
+  return buildXlsx("심포니업로드",T,withCost?[22,10,12]:[22,10])}
+function xSave(wc){if(!rows.length){toast("스캔한 내용이 없습니다.");return}if(!xRows().out.length){toast("파일에 넣을 상품이 없습니다. 설정을 확인하세요.",3000);return}const n=xName(wc);download(xBlob(wc),n);expBump();xRefresh();toast("저장했습니다: "+n,3500)}
+async function xShare(wc){if(!rows.length){toast("스캔한 내용이 없습니다.");return}if(!xRows().out.length){toast("파일에 넣을 상품이 없습니다. 설정을 확인하세요.",3000);return}
+  const n=xName(wc),f=new File([xBlob(wc)],n,{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){let ok=true;try{await navigator.share({files:[f],title:n})}catch(e){ok=false}if(ok){expBump();xRefresh()}}else{download(f,n);expBump();xRefresh();toast("이 기기에서는 공유를 지원하지 않아 파일로 저장했습니다: "+n,3500)}}
+$("btnXp").onclick=()=>{xRefresh();$("xp").classList.add("on");$("xp").scrollTop=0};
+$("xpBack").onclick=()=>$("xp").classList.remove("on");
+$("xpCost").onchange=()=>{XS.costCol=$("xpCost").value;xsSave();xRefresh()};
+$("xpNoData").onchange=()=>{XS.noData=$("xpNoData").checked;xsSave();xRefresh()};
+$("xpSkip0").onchange=()=>{XS.skip0=$("xpSkip0").checked;xsSave();xRefresh()};
+$("xpName").oninput=()=>{XS.name=$("xpName").value.trim()||"심포니업로드";xsSave()};
+$("xpS1").onclick=()=>xSave(false);$("xpS2").onclick=()=>xSave(true);$("xpH1").onclick=()=>xShare(false);$("xpH2").onclick=()=>xShare(true);
+
+
+/* ---------- price POP label ---------- */
+const L_BITS=["0001101","0011001","0010011","0111101","0100011","0110001","0101111","0111011","0110111","0001011"];
+function ean13Bits(s){const d=s.split("").map(Number),f=d[0],par=PAR[f];let b="101";
+  for(let i=1;i<=6;i++){const L=L_BITS[d[i]];b+=par[i-1]==="L"?L:L.split("").reverse().map(c=>c==="0"?"1":"0").join("")}
+  b+="01010";for(let i=7;i<=12;i++)b+=L_BITS[d[i]].split("").map(c=>c==="0"?"1":"0").join("");return b+"101"}
+function ean13OK(s){if(!/^\d{13}$/.test(s))return false;let t=0;for(let i=0;i<12;i++)t+=(+s[i])*(i%2?3:1);return (10-t%10)%10===+s[12]}
+function c128Bits(s){let vals=[],st;
+  if(/^\d+$/.test(s)&&s.length%2===0&&s.length>=4){st=105;for(let i=0;i<s.length;i+=2)vals.push(+s.slice(i,i+2))}
+  else{st=104;for(const ch of s){const c=ch.charCodeAt(0);if(c>=32&&c<=126)vals.push(c-32)}}
+  let sum=st;vals.forEach((v,i)=>sum+=v*(i+1));const seq=[st,...vals,sum%103,106];let bits="",bar=true;
+  for(const v of seq){const p=C128[v];for(const ch of p){bits+=(bar?"1":"0").repeat(+ch);bar=!bar}}
+  return bits+"11"}
+let PP=[];let PS={sale:"판매가",cons:"소비자가",showC:true,strike:true,bar:true,fs:34};
+try{PP=JSON.parse(localStorage.getItem("pop")||"[]");const sv=JSON.parse(localStorage.getItem("pops")||"{}");if(sv.fs&&!sv.v2)sv.fs=({26:28,30:34,34:40})[sv.fs]||34;sv.v2=1;Object.assign(PS,sv)}catch(e){}
+function ppSaveL(){try{localStorage.setItem("pop",JSON.stringify(PP));localStorage.setItem("pops",JSON.stringify(PS))}catch(e){}}
+function ppVal(L,name){if(!L.row||!name)return "";if(name===DISC){const d=DCM.get(String(L.row[0]));return d===undefined?"":d}const H=L.st==="DB"?HDB:HBK;let i=H.findIndex(x=>String(x).trim()===name);if(i<0&&name==="판매가")i=4;if(i<0)return "";const v=L.row[i];const n=Number(String(v).replace(/,/g,""));return v===undefined||v===""||!isFinite(n)?"":n}
+function ppInfo(b){const sv=SRC;SRC="first";const L=lookup(b);SRC=sv;let sale=ppVal(L,PS.sale),cons=ppVal(L,PS.cons);
+  if(PS.useDisc&&L.row){const d=DCM.get(String(L.row[0]));if(d!==undefined&&d>0&&PS.sale!==DISC){cons=sale!==""?sale:cons;sale=d}}   // 할인가가 있으면 판매가 자리에 크게, 기존 판매가는 취소선
+  return {name:L.row?(L.row[1]||""):"",sale,cons,found:!!L.row}}
+function ppWrap(ctx,text,maxW,maxLines){let lines=[],cur="";for(const ch of [...text]){const t=cur+ch;if(ctx.measureText(t).width>maxW&&cur){const sp=cur.lastIndexOf(" ");if(sp>0&&ch!==" "){lines.push(cur.slice(0,sp));cur=cur.slice(sp+1)+ch}else{lines.push(cur);cur=ch.trim()?ch:""}}else cur=t}if(cur)lines.push(cur);return lines}
+function ppDraw(b,cv,S){
+  S=S||1;const W=440,H=256,info=ppInfo(b);cv=cv||document.createElement("canvas");cv.width=Math.round(W*S);cv.height=Math.round(H*S);const c=cv.getContext("2d");const sx=cv.width/W,sy=cv.height/H;c.setTransform(sx,0,0,sy,0,0);
+  c.fillStyle="#fff";c.fillRect(0,0,W,H);c.fillStyle="#000";c.textBaseline="top";
+  const FF='"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif',RED="#d00000",TOP=18,BOT=16,MX=14,GAP=16;
+  const hasC=PS.showC&&info.cons!=="",pf=56;
+  // sale price size (shrink to fit, leave room for consumer price on the left)
+  const saleS=info.sale!==""?info.sale.toLocaleString()+"원":"";let sf=pf;
+  const maxSale=W-2*MX-(hasC?130:0);if(saleS){c.font=`bold ${sf}px ${FF}`;while(c.measureText(saleS).width>maxSale&&sf>24){sf-=2;c.font=`bold ${sf}px ${FF}`}}
+  // name
+  let fs=PS.fs,name=info.name||"(상품명 없음)",lines;const NW=W-2*MX;
+  const minOne=Math.ceil(PS.fs*.78);for(fs=PS.fs;fs>=minOne;fs-=2){c.font=`bold ${fs}px ${FF}`;if(c.measureText(name).width<=NW)break}
+  if(fs<minOne){for(fs=PS.fs;fs>=18;fs-=2){c.font=`bold ${fs}px ${FF}`;if(ppWrap(c,name,NW,9).length<=2)break}if(fs<18)fs=18;c.font=`bold ${fs}px ${FF}`}
+  lines=ppWrap(c,name,NW,9);
+  if(lines.length>2){lines=lines.slice(0,2);let l=lines[1];while(l.length>1&&c.measureText(l+"…").width>NW)l=l.slice(0,-1);lines[1]=l+"…"}
+  lines.forEach((t,i)=>c.fillText(t,MX,TOP+i*(fs+4)));
+  let y=TOP+lines.length*(fs+4)+GAP;
+  const yS=H-BOT-pf-2,priceTop=yS;
+  if(PS.bar){
+    const bits=ean13OK(b)?ean13Bits(b):c128Bits(b);let mw=Math.floor((W-40)/bits.length);if(mw<1)mw=1;if(mw>3)mw=3;
+    const bw=bits.length*mw,x0=Math.floor((W-bw)/2),bh=Math.max(22,Math.min(58,priceTop-y-24));
+    c.save();c.setTransform(1,0,0,1,0,0);{let i=0;while(i<bits.length){if(bits[i]!=="1"){i++;continue}let j=i;while(j<bits.length&&bits[j]==="1")j++;const X=Math.round((x0+i*mw)*sx),X2=Math.round((x0+j*mw)*sx);c.fillRect(X,Math.round(y*sy),Math.max(1,X2-X),Math.round(bh*sy));i=j}}c.restore();
+    c.font=`17px ${FF}`;c.textAlign="center";c.fillText(b,W/2,y+bh+2);c.textAlign="left"}
+  if(saleS){c.font=`bold ${sf}px ${FF}`;c.textAlign="right";c.fillStyle=RED;c.fillText(saleS,W-MX,yS+(pf-sf)*.9);c.fillStyle="#000";c.textAlign="left"}
+  if(hasC){const num=info.cons.toLocaleString()+"원";let cf=Math.min(34,Math.round(sf*.62));const avail=W-2*MX-(saleS?(c.font=`bold ${sf}px ${FF}`,c.measureText(saleS).width):0)-14;
+    c.font=`${cf}px ${FF}`;while(c.measureText(num).width>avail&&cf>16){cf-=2;c.font=`${cf}px ${FF}`}
+    const ny=yS+pf-cf-2;c.fillText(num,MX,ny);const tw=c.measureText(num).width;
+    c.font=`16px ${FF}`;c.fillText("소비자가",MX,ny-20);
+    if(PS.strike){c.fillStyle=RED;c.fillRect(MX-2,ny+Math.round(cf*.55),tw+4,3);c.fillStyle="#000"}}
+  return {cv,info}}
+function ppRefresh(){
+  const opts=sel=>{let o='<option value="">(없음)</option>';const seen=new Set();for(const H of [HDB,HBK])(H||[]).forEach((x,i)=>{x=String(x).trim();if(i===0||!x||seen.has(x))return;seen.add(x);o+=`<option value="${esc(x)}">${esc(x)}</option>`});o+=`<option value="${DISC}">${DISC}</option>`;return o};
+  $("ppSale").innerHTML=opts();$("ppList2").innerHTML=opts();$("ppSale").value=PS.sale;$("ppList2").value=PS.cons;
+  if($("ppSale").value!==PS.sale)$("ppSale").value="";if($("ppList2").value!==PS.cons)$("ppList2").value="";
+  $("ppShowC").checked=PS.showC;$("ppUseDisc").checked=!!PS.useDisc;$("ppStrike").checked=PS.strike;$("ppBar").checked=PS.bar;$("ppFs").value=String(PS.fs);
+  const tot=PP.reduce((a,x)=>a+x.n,0);$("ppCnt").textContent=`(${PP.length}종류 / 총 ${tot}장)`;
+  $("ppList").innerHTML=PP.map((x,i)=>{const f=ppInfo(x.b);return `<div class="ppit" data-i="${i}"><div class="t"><b>${esc(f.name||"(자료에 없음)")}</b><span class="small">${esc(x.b)}${f.sale!==""?" · "+f.sale.toLocaleString()+"원":""}</span></div><button data-a="m">−</button><span class="q">${x.n}</span><button data-a="p">+</button><button data-a="v">👁</button><button data-a="d">✕</button></div>`}).join("")||'<div class="small">담긴 상품이 없습니다.</div>';
+  ppPreview(PP.length?(ppPv>=0&&ppPv<PP.length?ppPv:0):-1);if(typeof a4Preview==='function')a4Preview()}
+let ppPv=0;
+function ppPreview(i){ppPv=i;const cv=$("ppCv");if(i<0){const c=cv.getContext("2d");c.fillStyle="#fff";c.fillRect(0,0,440,256);$("ppPv").textContent="";return}const r=ppDraw(PP[i].b,cv);$("ppPv").textContent=(r.info.found?"":"⚠ 자료에 없는 바코드 ")+(r.info.sale===""?"⚠ 판매가 없음":"")}
+function ppAddB(b,n){b=String(b).trim();if(!b)return;const f=PP.find(x=>x.b===b);if(f)f.n+=n||1;else PP.push({b,n:n||1});ppSaveL()}
+function ppBlobs(){const out=[];for(const x of PP){for(let k=0;k<x.n;k++)out.push(x.b)}return out}
+function ppCanvasBlob(b){return new Promise(r=>ppDraw(b).cv.toBlob(r,"image/png"))}
+$("btnPp").onclick=()=>{ppRefresh();$("pp").classList.add("on");$("pp").scrollTop=0};
+$("ppBack").onclick=()=>$("pp").classList.remove("on");
+
+/* ---------- 가격조회 (매장 가격 조회기 형식) ---------- */
+let PCL=[],pcKind="",pcLastB="";
+try{PCL=JSON.parse(localStorage.getItem("pcList")||"[]");if(!Array.isArray(PCL))PCL=[];pcKind=localStorage.getItem("pcKind")||""}catch(e){PCL=[]}
+function pcSave(){try{localStorage.setItem("pcList",JSON.stringify(PCL))}catch(e){}}
+function pcKindNow(){let k=pcKind||PRICE;if(!k||k==="*"){const c=priceCols();k=c.includes("판매가")?"판매가":(c[0]||"판매가")}return k}
+function pcFill(){const sel=$("pcSel");if(!sel)return;const cols=priceCols().filter(c=>c!==DISC||DCM.size);let h='<option value="">대표 판매가와 같음</option>';cols.forEach(c=>h+=`<option value="${esc(c)}">${esc(c)}</option>`);sel.innerHTML=h;sel.value=cols.includes(pcKind)?pcKind:""}
+function pcNum(v){if(v===undefined||v===null||v==="")return null;const n=Number(String(v).replace(/,/g,""));return isFinite(n)?n:null}
+function pcPick(row,H,kind,b){if(kind===DISC)return pcNum(DCM.get(String(b)));if(!row)return null;const i=H.findIndex((h,j)=>j>=2&&String(h)===kind);return i>=0?pcNum(row[i]):null}
+function pcResolve(b,kind){
+  const L=lookup(b),found=L.st!=="자료 없음";let price=null;
+  if(found){price=pcPick(L.row,L.st==="DB"?HDB:HBK,kind,b);
+    if(price===null&&L.st==="DB"&&SRC!=="db"){const r=BKM.get(b);if(r)price=pcPick(r,HBK,kind,b)}}   // DB에 가격이 없으면 DB_백업에서
+  else if(kind===DISC)price=pcNum(DCM.get(String(b)));
+  return {b,found,name:found?(L.name||"(상품명 없음)"):"",price,src:L.st}}
+function pcMoney(n){return Number(n).toLocaleString()}
+function pcBigHtml(r,kind){
+  if(!r)return '<div class="hint0">바코드를 스캔하면 품명과 가격이 크게 표시되고, 오른쪽(아래) 목록에 쌓입니다.</div>';
+  const bad=digBad(r.b)?`<div class="warn" style="font-size:16px;margin-top:6px">⚠ 자리수 ${String(r.b).length} (기준 ${DIG})</div>`:"";
+  if(!r.found)return `<div class="warn">자료에 없는 바코드입니다</div><div class="bc">${esc(r.b)}</div>${bad}`;
+  return `<div class="nm">${esc(r.name)}</div><div class="bc">${esc(r.b)} · ${esc(r.src)}</div>`+
+    (r.price===null?`<div class="warn" style="margin-top:8px">${esc(kind)} 없음</div>`:`<div class="pr">${pcMoney(r.price)}<small>원</small></div>`)+bad}
+function pcDraw(){
+  const kind=pcKindNow();$("pcKindL").textContent="표시 가격 : "+kind;$("pcPH").textContent=kind;
+  let sum=0,n=0,miss=0,np=0;const R=PCL.map(b=>pcResolve(b,kind));
+  R.forEach(r=>{if(r.found){n++;if(r.price===null)np++;else sum+=r.price}else miss++});
+  $("pcRows").innerHTML=R.map((r,i)=>({r,i})).reverse().map(({r,i})=>`<tr class="${r.found&&r.price!==null?"":"miss"}"><td>${i+1}</td><td class="bcc">${esc(r.b)}</td><td>${r.found?esc(r.name):'<b style="color:var(--orange)">자료 없음</b>'}</td><td class="n">${r.found?(r.price===null?'<span style="color:var(--orange)">-</span>':pcMoney(r.price)):""}</td><td class="x" style="width:40px;text-align:center"><button data-i="${i}" style="border:0;background:none;color:var(--red);font-size:22px;padding:0 6px">✕</button></td></tr>`).join("")||'<tr><td colspan="5" class="small" style="text-align:center;padding:18px">조회한 상품이 없습니다.</td></tr>';
+  $("pcN").textContent=n.toLocaleString();$("pcSum").textContent=pcMoney(sum);
+  $("pcX").textContent=[miss?`자료 없음 ${miss}건`:"",np?`가격 없음 ${np}건`:"",(miss||np)?"(합계 제외)":""].filter(Boolean).join(" · ");
+  $("pcBig").innerHTML=pcBigHtml(pcLastB?pcResolve(pcLastB,kind):null,kind)}
+function pcAdd(b){
+  b=String(b||"").trim();if(!b)return null;
+  if(/^\d+$/.test(b)&&b.length<13&&!DBM.has(b)&&!BKM.has(b)){const p=b.padStart(13,"0");if(DBM.has(p)||BKM.has(p))b=p}
+  const r=pcResolve(b,pcKindNow());
+  if(digBad(b))sound("digit");else if(!r.found||r.price===null)sound("nodata");else sound("ok");
+  PCL.push(b);pcLastB=b;pcSave();pcDraw();return r}
+function pcGo(){const v=$("pcBc").value;$("pcBc").value="";pcAdd(v);$("pcBc").focus()}
+let pcWake=null;
+async function pcWakeOn(){try{if(navigator.wakeLock&&!pcWake){pcWake=await navigator.wakeLock.request("screen");pcWake.addEventListener("release",()=>{pcWake=null})}}catch(e){}}   // 가격조회 화면이 켜져 있는 동안 화면이 꺼지지 않게
+function pcWakeOff(){try{if(pcWake){pcWake.release();pcWake=null}}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&$("pc").classList.contains("on"))pcWakeOn()});
+$("btnPc").onclick=()=>{pcFill();$("pc").classList.add("on");pcDraw();pcWakeOn();setTimeout(()=>$("pcBc").focus(),50)};
+$("pcBack").onclick=()=>{camStop();pcWakeOff();$("pc").classList.remove("on");try{$("bc").focus()}catch(e){}};
+$("pcGo").onclick=pcGo;
+$("pcBc").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key==="Tab"){e.preventDefault();pcGo()}});
+$("pcRows").addEventListener("click",e=>{const b=e.target.closest("button[data-i]");if(!b)return;PCL.splice(+b.dataset.i,1);if(!PCL.length)pcLastB="";pcSave();pcDraw();$("pcBc").focus()});
+$("pcClr").onclick=()=>{if(PCL.length&&!confirm("조회한 목록 "+PCL.length+"건을 모두 지울까요?"))return;PCL=[];pcLastB="";pcSave();pcDraw();$("pcBc").focus()};
+$("pcKb").onclick=()=>{const i=$("pcBc"),off=i.getAttribute("inputmode")==="none";if(off){i.removeAttribute("inputmode");$("pcKb").textContent="화상 키보드 끄기"}else{i.setAttribute("inputmode","none");$("pcKb").textContent="화상 키보드 켜기"}try{localStorage.setItem("pcKb",off?"on":"off")}catch(e){}i.focus()};
+try{if(localStorage.getItem("pcKb")==="off"){$("pcBc").setAttribute("inputmode","none");$("pcKb").textContent="화상 키보드 켜기"}}catch(e){}
+function pcCamHit(b){const r=pcAdd(b);if(!r)return;const kind=pcKindNow();$("camRes").innerHTML=r.found?`<div class="nm">${esc(r.name)}</div><div class="nums"><span>${esc(kind)} <b>${r.price===null?"없음":pcMoney(r.price)+"원"}</b></span><span class="small">${esc(r.b)}</span></div>`:`<div class="nm" style="color:var(--orange)">자료 없음</div><div class="small">${esc(r.b)}</div>`}
+$("pcCam").onclick=()=>{camCb=pcCamHit;camStart();$("camTitle").textContent="가격조회 카메라"};
+$("pcSel").onchange=()=>{pcKind=$("pcSel").value;try{localStorage.setItem("pcKind",pcKind)}catch(e){}if($("pc").classList.contains("on"))pcDraw()};
+
+$("ppAdd").onclick=()=>{const b=$("ppBc").value.trim();if(!b){toast("바코드를 입력하세요.");return}ppAddB(b,1);$("ppBc").value="";ppRefresh()};
+$("ppBc").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("ppAdd").click()}});
+$("ppAll").onclick=()=>{const m=new Map();for(const r of rows)m.set(r.b,(m.get(r.b)||0)+r.q);if(!m.size){toast("스캔한 내용이 없습니다.");return}for(const [b] of m){if(!PP.find(x=>x.b===b))PP.push({b,n:1})}ppSaveL();ppRefresh();toast(m.size+"종류를 담았습니다. 장수는 1장씩입니다.",3000)};
+$("ppClear").onclick=()=>{if(PP.length&&!confirm("담긴 상품을 모두 비울까요?"))return;PP=[];ppSaveL();ppRefresh()};
+$("ppQ1").onclick=()=>{PP.forEach(x=>x.n=1);ppSaveL();ppRefresh()};
+$("ppList").addEventListener("click",e=>{const bt=e.target.closest("button");if(!bt)return;const it=bt.closest(".ppit"),i=+it.dataset.i,a=bt.dataset.a;
+  if(a==="p")PP[i].n++;else if(a==="m"){if(PP[i].n>1)PP[i].n--}else if(a==="d")PP.splice(i,1);else if(a==="v"){ppPv=i}
+  ppSaveL();ppRefresh();if(a==="v")$("ppCv").scrollIntoView({behavior:"smooth",block:"center"})});
+const ppSet=()=>{PS.sale=$("ppSale").value;PS.cons=$("ppList2").value;PS.showC=$("ppShowC").checked;PS.strike=$("ppStrike").checked;PS.useDisc=$("ppUseDisc").checked;PS.bar=$("ppBar").checked;PS.fs=+$("ppFs").value;ppSaveL();ppRefresh()};
+["ppSale","ppList2","ppShowC","ppStrike","ppUseDisc","ppBar","ppFs"].forEach(id=>$(id).addEventListener("change",ppSet));
+function ppNeed(){if(!PP.length){toast("출력할 상품을 먼저 담으세요.");return false}return true}
+$("ppPrintBtn").onclick=()=>{if(!ppNeed())return;const list=ppBlobs();if(list.length>200&&!confirm(list.length+"장입니다. 계속할까요?"))return;
+  $("ppPrint").innerHTML=list.map(b=>`<img src="${ppDraw(b).cv.toDataURL("image/png")}">`).join("");setTimeout(()=>{window.print()},200)};
+$("ppShare").onclick=async()=>{if(!ppNeed())return;const list=ppBlobs();if(list.length>30){toast("공유는 한 번에 30장까지입니다. 장수를 줄여 주세요.",3500);return}
+  const files=[];for(let i=0;i<list.length;i++){files.push(new File([await ppCanvasBlob(list[i])],`POP_${String(i+1).padStart(2,"0")}_${list[i]}.png`,{type:"image/png"}))}
+  if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title:"가격 POP"})}catch(e){}}else{toast("이 기기는 공유를 지원하지 않아 이미지를 저장합니다.",3000);$("ppSave").click()}};
+$("ppSave").onclick=async()=>{if(!ppNeed())return;const list=ppBlobs();if(list.length>30){toast("저장은 한 번에 30장까지입니다.",3500);return}
+  for(let i=0;i<list.length;i++){download(await ppCanvasBlob(list[i]),`POP_${String(i+1).padStart(2,"0")}_${list[i]}.png`);await new Promise(r=>setTimeout(r,250))}toast(list.length+"장 저장했습니다.",3000)};
+
+
+
+/* A4 sheet */
+const A4C=3,A4R=9,A4N=27;
+function a4Pages(){const list=ppBlobs(),st=Math.max(1,Math.min(A4N,+$("ppStart").value||1))-1;const pages=[];let pos=st;let cur=null;
+  for(const b of list){const pg=Math.floor(pos/A4N);if(!pages[pg])pages[pg]=[];pages[pg].push([pos%A4N,b]);pos++}
+  for(let i=0;i<pages.length;i++)if(!pages[i])pages[i]=[];return pages}
+function a4Render(items,W,H,cache){ // W,H canvas px; layout from mm
+  const pxmm=W/210,lw=Math.round(55*pxmm),lh=Math.round(32*pxmm),gw=lw*A4C,gh=lh*A4R,x0=Math.round((W-gw)/2),y0=Math.round((H-gh)/2);
+  const cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");c.fillStyle="#fff";c.fillRect(0,0,W,H);
+  const cut=$("ppCut").checked;
+  for(const [p,b] of items){const col=p%A4C,row=Math.floor(p/A4C),x=x0+col*lw,y=y0+row*lh;
+    let lc=cache&&cache.get(b+"|"+lw);if(!lc){lc=ppDraw(b,null,lw/440);if(Math.abs(lc.cv.height-lh)>1){}lc=lc.cv;cache&&cache.set(b+"|"+lw,lc)}
+    c.drawImage(lc,x,y,lw,lh);
+    if(cut){c.strokeStyle="#9a9a9a";c.lineWidth=Math.max(1,Math.round(W/1240));c.setLineDash([Math.round(W/160),Math.round(W/160)]);c.strokeRect(x+.5,y+.5,lw-1,lh-1);c.setLineDash([])}}
+  return cv}
+function a4Preview(){const cv=$("ppA4"),pg=a4Pages();const tot=PP.reduce((a,x)=>a+x.n,0);
+  if(!tot){const c=cv.getContext("2d");c.fillStyle="#fff";c.fillRect(0,0,cv.width,cv.height);$("ppA4i").textContent="담긴 상품이 없습니다.";return}
+  const r=a4Render(pg[0],496,702,new Map());cv.width=496;cv.height=702;cv.getContext("2d").drawImage(r,0,0);$("ppA4i").textContent=`총 ${tot}장 → A4 ${pg.length}쪽 (1쪽 미리보기)`}
+async function a4Build(kind){ // kind png|jpg ; returns [{name,blob}]
+  const pg=a4Pages(),cache=new Map(),out=[];
+  for(let i=0;i<pg.length;i++){const cv=a4Render(pg[i],2480,3508,cache);
+    const blob=await new Promise(r=>cv.toBlob(r,kind==="png"?"image/png":"image/jpeg",.93));out.push({name:`POP_A4_${String(i+1).padStart(2,"0")}.${kind==="png"?"png":"jpg"}`,blob});cv.width=cv.height=1}
+  return out}
+async function a4Pdf(){const imgs=await a4Build("jpg");const enc=new TextEncoder(),chunks=[],offs=[];let len=0;
+  const push=u=>{const a=typeof u==="string"?enc.encode(u):u;chunks.push(a);len+=a.length};
+  const obj=(n,fn)=>{offs[n]=len;push(`${n} 0 obj\n`);fn();push("\nendobj\n")};
+  push("%PDF-1.4\n");const n=imgs.length;
+  obj(1,()=>push("<< /Type /Catalog /Pages 2 0 R >>"));
+  obj(2,()=>push(`<< /Type /Pages /Count ${n} /Kids [${imgs.map((_,i)=>`${3+i*3} 0 R`).join(" ")}] >>`));
+  for(let i=0;i<n;i++){const pn=3+i*3,cn=pn+1,im=pn+2,jb=new Uint8Array(await imgs[i].blob.arrayBuffer());
+    obj(pn,()=>push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${cn} 0 R >>`));
+    const cs="q 595.28 0 0 841.89 0 0 cm /Im0 Do Q";obj(cn,()=>push(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+    obj(im,()=>{push(`<< /Type /XObject /Subtype /Image /Width 2480 /Height 3508 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jb.length} >>\nstream\n`);push(jb);push("\nendstream")})}
+  const xr=len;push(`xref\n0 ${3+n*3}\n0000000000 65535 f \n`);for(let k=1;k<3+n*3;k++)push(String(offs[k]).padStart(10,"0")+" 00000 n \n");
+  push(`trailer\n<< /Size ${3+n*3} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`);
+  const all=new Uint8Array(len);let o=0;chunks.forEach(c=>{all.set(c,o);o+=c.length});return new Blob([all],{type:"application/pdf"})}
+function a4Name(){return "가격POP_"+($("date").value||today()).replace(/-/g,"")}
+async function a4Do(fmt,share){if(!ppNeed())return;toast("만드는 중... 잠시만 기다리세요.",60000);
+  try{let files;
+    if(fmt==="pdf"){const b=await a4Pdf();files=[new File([b],a4Name()+".pdf",{type:"application/pdf"})]}
+    else{const im=await a4Build("png");files=im.map((x,i)=>new File([x.blob],a4Name()+"_"+String(i+1).padStart(2,"0")+".png",{type:"image/png"}))}
+    $("toast").style.display="none";
+    if(share&&navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title:"가격 POP A4"})}catch(e){}}
+    else{for(const f of files){download(f,f.name);await new Promise(r=>setTimeout(r,300))}toast((share?"이 기기는 공유를 지원하지 않아 저장했습니다. ":"")+files.length+"개 파일 저장",3500)}
+  }catch(e){toast("만들기 오류: "+e.message,5000)}}
+$("ppA4Png").onclick=()=>a4Do("png",false);$("ppA4PngS").onclick=()=>a4Do("png",true);$("ppA4Pdf").onclick=()=>a4Do("pdf",false);$("ppA4PdfS").onclick=()=>a4Do("pdf",true);
+$("ppStart").addEventListener("input",a4Preview);$("ppCut").addEventListener("change",a4Preview);
+
+/* RawBT (ESC/POS raster) */
+PS.feed=PS.feed||"none";PS.pad=PS.pad||0;
+function ppRaster(b){const cv=ppDraw(b).cv,W=440,H=256,id=cv.getContext("2d").getImageData(0,0,W,H).data,pad=Math.max(0,Math.min(300,PS.pad|0)),bpr=Math.ceil((W+pad)/8),out=new Uint8Array(bpr*H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const o=(y*W+x)*4,lum=id[o]*.3+id[o+1]*.59+id[o+2]*.11;if(lum<160){const xx=x+pad;out[y*bpr+(xx>>3)]|=0x80>>(xx&7)}}
+  const hd=[0x1D,0x76,0x30,0,bpr&255,bpr>>8,H&255,H>>8];const tail=PS.feed==="ff"?[0x0C]:PS.feed==="gsff"?[0x1D,0x0C]:PS.feed==="lf3"?[0x0A,0x0A,0x0A]:[];
+  const r=new Uint8Array(hd.length+out.length+tail.length);r.set(hd,0);r.set(out,hd.length);r.set(tail,hd.length+out.length);return r}
+function ppB64(u8){let s="";for(let i=0;i<u8.length;i+=8192)s+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));return btoa(s)}
+function ppRawSend(list){const parts=[new Uint8Array([0x1B,0x40])];for(const b of list)parts.push(ppRaster(b));let n=0;parts.forEach(p=>n+=p.length);const all=new Uint8Array(n);let o=0;parts.forEach(p=>{all.set(p,o);o+=p.length});
+  const a=document.createElement("a");a.href="rawbt:base64,"+ppB64(all);document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500)}
+let ppRawPos=0;
+$("ppFeed").value=PS.feed;$("ppPad").value=PS.pad;
+$("ppFeed").addEventListener("change",()=>{PS.feed=$("ppFeed").value;ppSaveL()});
+$("ppPad").addEventListener("input",()=>{PS.pad=Math.max(0,Math.min(300,+$("ppPad").value||0));ppSaveL()});
+$("ppRawT").onclick=()=>{if(!PP.length){toast("출력할 상품을 먼저 담으세요.");return}ppRawSend([PP[Math.min(ppPv,PP.length-1)].b])};
+$("ppRaw").onclick=()=>{if(!ppNeed())return;const list=ppBlobs(),N=6;if(ppRawPos>=list.length)ppRawPos=0;const part=list.slice(ppRawPos,ppRawPos+N);ppRawSend(part);ppRawPos+=part.length;
+  if(ppRawPos<list.length){$("ppRaw").textContent=`RawBT로 다음 ${Math.min(N,list.length-ppRawPos)}장 인쇄 (${ppRawPos}/${list.length} 완료)`;toast(part.length+"장 보냈습니다. 완료되면 다시 눌러 다음 장을 보내세요.",4000)}else{ppRawPos=0;$("ppRaw").textContent="RawBT로 인쇄";toast("전부 보냈습니다.",2500)}};
+
+/* ---------- detail page ---------- */
+const NAMES={cost:["입고단가","매입단가","입고가","매입가"],vendor:["입고업체","매입사","업체","거래처"]};
+function colOf(H,names){for(const n of names){const i=H.findIndex(h=>String(h).trim()===n);if(i>=0)return i}return -1}
+function priceNo(h){const m=/^판매가\s*0?(\d+)$/.exec(String(h).trim());return m?+m[1]:null}
+function fld(k,v,num){const e=(v===undefined||v===""||v===null);return `<div class="fld"><div class="k">${esc(k)}</div><div class="v ${e?"e":num?"n":""}">${e?"-":esc(num?fmtP(v):v)}</div></div>`}
+function openPage(b){
+  b=String(b||"").trim(); if(!b)return;
+  const sv=SRC; SRC="first"; const L=lookup(b); SRC=sv; const c=cum.get(b)||0; let h="";
+  const cls=L.st==="DB"?"ok":L.st==="DB_백업"?"bk":"no";
+  h+=`<div class="card"><span class="st ${cls}">${L.st}</span>${isEdited(b)?'<span class="badge">수정됨</span>':""}<div class="nm" style="font-size:22px;font-weight:700;margin-top:6px;word-break:break-all">${esc(L.name)}</div><div style="margin-top:8px"><button class="btn" id="pgEdit">${L.row?"✎ 수정":"＋ 새 상품으로 등록"}</button> <button class="btn" id="pgPop" style="background:var(--orange)">POP 담기</button></div></div>`;
+  if(!L.row){h+=`<div class="card"><div class="small">이 바코드는 불러온 자료(DB / DB_백업)에 없습니다.<br>DB와 DB_백업 모두에서 찾아보았습니다.</div>${fld("바코드",b)}${fld("누적 스캔",c,true)}</div>`}
+  else{
+    const H=L.st==="DB"?HDB:HBK, R=L.row, used=new Set([0]);
+    const get=i=>i>=0?R[i]:undefined;
+    h+=`<div class="card"><div class="sec" style="margin-top:0">기본 정보</div>`+fld("바코드",R[0]||b)+fld("상품명",R[1]);
+    used.add(1);
+    const ic=colOf(H,NAMES.cost), iv=colOf(H,NAMES.vendor), isg=colOf(H,["규격"]);
+    h+=fld("규격",get(isg)); if(isg>=0)used.add(isg);
+    h+=fld("입고업체",get(iv)); if(iv>=0)used.add(iv);
+    h+=`<div class="sec">가격</div>`+fld("입고가",get(ic),true); if(ic>=0)used.add(ic);
+    const ico=colOf(H,["소비자가"]); if(ico>=0){h+=fld("소비자가",R[ico],true);used.add(ico)}
+    const ip1=colOf(H,["판매가"]); if(ip1>=0){h+=fld("판매가",R[ip1],true);used.add(ip1)}
+    for(let n=1;n<=10;n++){const i=H.findIndex(x=>priceNo(x)===n); h+=fld("판매가 "+n,i>=0?R[i]:"",true); if(i>=0)used.add(i)}
+    {const d=DCM.get(String(R[0]));if(d!==undefined)h+=fld(DISC+" (앱 전용)",d,true)}
+    const iq=colOf(H,["입고수량"]);
+    h+=`<div class="sec">수량</div>`+fld("입고수량",L.st==="DB"?get(iq):"",true)+fld("누적 스캔",c,true);
+    if(iq>=0)used.add(iq);
+    if(L.dbq!==null){const d=c-L.dbq;h+=fld("차이(누적-입고)",(d>0?"+":"")+d,false)}
+    const rest=[];H.forEach((x,i)=>{if(!used.has(i)&&R[i]!==undefined&&R[i]!=="")rest.push([x||("열"+(i+1)),R[i]])});
+    if(rest.length){h+=`<div class="sec">기타 필드</div>`;rest.forEach(([k,v])=>h+=fld(k,v))}
+    h+=`</div>`;
+    const miss=[];if(ic<0)miss.push("입고가");if(iv<0)miss.push("입고업체");if(!H.some(x=>priceNo(x)))miss.push("판매가 1~10");
+    if(miss.length)h+=`<div class="small" style="padding:0 4px">※ 불러온 파일에 ${miss.join(", ")} 항목이 없습니다. PC 재고관리(최신판)의 [모바일 생성]으로 파일을 다시 만들어 불러오세요.</div>`;
+  }
+  $("pgBody").innerHTML=h; $("pg").classList.add("on"); $("pg").scrollTop=0;
+  $("pgEdit").onclick=()=>openEdit(b,!L.row);
+  $("pgPop").onclick=()=>{ppAddB(b,1);toast("가격 POP 목록에 담았습니다.",2500)};
+  if(camOn)camStop();
+  try{history.pushState({pg:1},"")}catch(e){}
+}
+function closePage(){ if($("pg").classList.contains("on")){$("pg").classList.remove("on"); $("bc").blur()} }
+$("pgBack").onclick=()=>{ if(history.state&&history.state.pg){history.back()}else closePage() };
+window.addEventListener("popstate",closePage);
+$("res").addEventListener("click",e=>{if(!e.target.closest("[data-more]"))return;const o=$("res").dataset.o; if(o)openPage(o)});
+$("camRes").addEventListener("click",e=>{if(!e.target.closest("[data-more]"))return;const o=$("camRes").dataset.o; if(o){camStop();openPage(o)}});
+
+/* ---------- start ---------- */
+(async function(){
+  load();
+  try{ if(localStorage.getItem("kb")==="off"){$("bc").setAttribute("inputmode","none");$("btnKb").textContent="화상 키보드 켜기"} }catch(e){}
+  try{ await IDB.open(); await dirLoad(); await loadAllData(); ensurePriceCols(); const ed=await IDB.get("edits"); if(Array.isArray(ed))EDLOG=ed; edInfo(); }catch(e){}
+  try{SRC=localStorage.getItem("src")||"first";PRICE=localStorage.getItem("price")||""}catch(e){}
+  $("srcSel").value=SRC; fillPriceSel();
+  info(); spRender(); render(); $("bc").focus();
+  if("serviceWorker" in navigator && location.protocol.startsWith("http")) {navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>{try{r.update()}catch(e){}}).catch(()=>{});navigator.serviceWorker.addEventListener("controllerchange",()=>{if(window.__rl)return;window.__rl=1;setTimeout(()=>location.reload(),300)})}
+})();
+</script>
+</body>
+</html>
