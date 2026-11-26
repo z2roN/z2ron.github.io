@@ -122,7 +122,7 @@ label.btn{cursor:pointer;border-radius:10px;font-weight:600;color:#fff}
 </style>
 </head>
 <body>
-<header><h1>재고 스캐너 <small id="ver" style="font-size:11px;font-weight:400;opacity:.7">v32</small></h1><button id="btnPc" style="background:var(--green)">가격조회</button><button id="btnPp" style="background:var(--orange)">가격POP</button><button id="btnXp" style="background:var(--blue)">내보내기</button><button id="btnSp" style="background:#546e7a">설정</button><button id="btnNew">새 작업</button></header>
+<header><h1>재고 스캐너 <small id="ver" style="font-size:11px;font-weight:400;opacity:.7">v33</small></h1><button id="btnPc" style="background:var(--green)">가격조회</button><button id="btnPp" style="background:var(--orange)">가격POP</button><button id="btnXp" style="background:var(--blue)">내보내기</button><button id="btnSp" style="background:#546e7a">설정</button><button id="btnNew">새 작업</button></header>
 <main>
 <div class="card">
   <div class="row">
@@ -178,7 +178,7 @@ label.btn{cursor:pointer;border-radius:10px;font-weight:600;color:#fff}
 <div class="card">
   <div class="row">
     <label>조회할 자료<select id="srcSel"><option value="first">DB 우선 → 백업</option><option value="db">DB만</option><option value="bk">DB_백업만</option></select></label>
-    <label>대표 판매가 (조회·POP에 쓸 가격)<select id="priceSel"></select></label>
+    <label>조회POP에 쓸 대표 가격<select id="priceSel"></select></label>
     <label>가격조회 화면에 표시할 가격<select id="pcSel"></select></label>
   </div>
   <div class="small" style="margin-top:6px">바코드를 조회할 자료와, 판매가로 쓸 열(판매가 1~10 중 선택)을 고릅니다. 선택은 기억됩니다.</div>
@@ -193,8 +193,8 @@ label.btn{cursor:pointer;border-radius:10px;font-weight:600;color:#fff}
 
 <div class="card"><div class="sec" style="margin-top:0">앱할인가 (앱 전용)</div><div class="small">가격POP용으로 상품마다 정하는 할인가입니다. 폰에만 저장되며 PC 재고관리로 올리는 수정 파일·DB에는 들어가지 않습니다. 상품 수정 화면에서 입력하고, 아래 자동 계산(%)에도 포함할 수 있습니다.</div><div class="small" id="dcInfo" style="margin-top:6px"></div><div class="bgrid" style="margin-top:6px"><button class="btn gray" id="dcClear">앱할인가 전체 지우기</button></div></div>
 <div class="card" id="spRl"><div class="sec" style="margin-top:0">상품 수정 시 자동 계산 (%)</div>
-<div class="small">상품 수정·등록 화면에서 입고단가(매입가)를 입력하면 아래 %를 적용한 가격이 각 칸에 자동으로 들어갑니다. 들어간 뒤에도 숫자를 직접 고칠 수 있습니다. 비워 둔 가격은 자동 계산하지 않으며, 0%는 입력할 수 없습니다.</div>
-<div class="row" style="margin-top:8px"><label>계산 방식<select id="rlMode"><option value="markup">가산율 : 입고단가 × (1 + %)</option><option value="margin">마진율 : 입고단가 ÷ (1 − %)</option></select></label></div>
+<div class="small">상품 수정·등록 화면에서 기준 가격(입고단가 / 소비자가 / 판매가 10 — 계산 방식에 따라 다름)을 입력하면 아래 %를 적용한 가격이 각 칸에 자동으로 들어갑니다. 들어간 뒤에도 숫자를 직접 고칠 수 있습니다. 비워 둔 가격은 자동 계산하지 않으며, 0%는 입력할 수 없습니다.</div>
+<div class="row" style="margin-top:8px"><label>계산 방식<select id="rlMode"><option value="markup">가산율 : 입고단가 × (1 + %)</option><option value="margin">마진율 : 입고단가 ÷ (1 − %)</option><option value="cons">소비자가 할인 : 소비자가 × (1 − %)</option><option value="s10">판매가 10 할인 : 판매가 10 × (1 − %)</option></select></label></div>
 <div class="row"><label>끝자리<select id="rlUnit"><option value="1">1원 단위</option><option value="10">10원 단위</option><option value="50">50원 단위</option><option value="100">100원 단위</option></select></label><label>처리<select id="rlRound"><option value="round">반올림</option><option value="ceil">올림</option><option value="floor">내림</option></select></label></div>
 <table id="rlTab" style="margin-top:6px"></table>
 <div class="small" id="rlEx" style="margin-top:6px"></div></div>
@@ -831,14 +831,14 @@ function openEdit(b,isNew){
   ord.forEach(i=>{const x=H[i];const v=R[i]===undefined?"":R[i];h+=`<div class="fld"><div class="k">${esc(labelOf(x))}</div><input class="edin" data-i="${i}" data-o="${esc(v)}" value="${esc(v)}" ${numish(x)?'inputmode="decimal"':""}></div>`});
   if(!isNew||true){const d=DCM.get(String(b));h+=`<div class="fld"><div class="k">${DISC}<br><span class="small">앱 전용 · PC로 안 올라감</span></div><input class="dcin" inputmode="decimal" data-o="${d===undefined?"":d}" value="${d===undefined?"":d}"></div>`}
   const rlc=Object.keys(RL.pct).filter(c=>c===DISC||H.findIndex(x=>String(x).trim()===c)>=0);
-  if(rlc.length)h+=`<div class="small" style="margin-top:10px">자동 계산(%) : ${rlc.map(c=>esc(c)+" "+(RL.mode==="margin"?"마진 ":"+")+RL.pct[c]+"%").join(" · ")}<br>입고단가를 입력하면 자동으로 들어갑니다. 들어간 뒤에도 직접 고칠 수 있습니다.</div><button class="btn" id="edAuto" style="margin-top:6px">% 자동 계산 다시 적용</button>`;
-  else h+=`<div class="small" style="margin-top:10px">설정 화면에서 가격별 %를 정해 두면 입고단가 입력 시 자동 계산됩니다.</div>`;
+  if(rlc.length)h+=`<div class="small" style="margin-top:10px">자동 계산(%) : ${rlc.map(c=>esc(c)+" "+rlSign()+RL.pct[c]+"%").join(" · ")}<br>${rlBaseName()}를 입력하면 자동으로 들어갑니다. 들어간 뒤에도 직접 고칠 수 있습니다.</div><button class="btn" id="edAuto" style="margin-top:6px">% 자동 계산 다시 적용</button>`;
+  else h+=`<div class="small" style="margin-top:10px">설정 화면에서 가격별 %를 정해 두면 ${rlBaseName()} 입력 시 자동 계산됩니다.</div>`;
   h+=`<div class="row" style="margin-top:12px"><button class="btn g" id="edOk">저장</button><button class="btn gray" id="edCancel">취소</button></div></div>`;
   $("pgBody").innerHTML=h;$("pg").classList.add("on");$("pg").scrollTop=0;
   $("pgBody").querySelectorAll(".edin,.dcin").forEach(i=>i.addEventListener("input",()=>i.classList.toggle("chg",i.value!==i.dataset.o)));
   $("edCancel").onclick=()=>openPage(b);
-  {const ic=colOf(H,NAMES.cost),cin=$("pgBody").querySelector(`.edin[data-i="${ic}"]`);
-   const auto=(say)=>{if(!cin)return;const cv=Number(String(cin.value).replace(/,/g,""));if(!(cv>0)){if(say)toast("입고단가를 먼저 입력하세요.");return}
+  {const ic=rlBaseIdx(H),cin=$("pgBody").querySelector(`.edin[data-i="${ic}"]`);
+   const auto=(say)=>{if(!cin)return;const cv=Number(String(cin.value).replace(/,/g,""));if(!(cv>0)){if(say)toast(rlBaseName()+"를 먼저 입력하세요.");return}
      let n=0;for(const c of Object.keys(RL.pct)){if(c===DISC)continue;const j=H.findIndex(x=>String(x).trim()===c);if(j<0)continue;const e=$("pgBody").querySelector(`.edin[data-i="${j}"]`);if(!e||j===ic)continue;e.value=String(calcPrice(cv,RL.pct[c]));e.classList.toggle("chg",e.value!==e.dataset.o);n++}
      if(RL.pct[DISC]){const de=$("pgBody").querySelector(".dcin");if(de){de.value=String(calcPrice(cv,RL.pct[DISC]));de.classList.toggle("chg",de.value!==de.dataset.o);n++}}
      if(say)toast(n?`${n}개 가격을 자동 계산했습니다.`:"설정에서 정한 %가 없습니다.")};
@@ -880,21 +880,24 @@ let RL={mode:"markup",unit:10,round:"round",pct:{}};
 try{const x=JSON.parse(localStorage.getItem("rules")||"{}");if(x&&typeof x==="object")RL=Object.assign(RL,x);if(!RL.pct||typeof RL.pct!=="object")RL.pct={}}catch(e){}
 function rlSave(){try{localStorage.setItem("rules",JSON.stringify(RL))}catch(e){}}
 function tgtCols(){const s=[...PRICE_NAMES,DISC];for(const H of [HDB,HBK])H.forEach((h,i)=>{h=String(h).trim();if(i>=2&&/^판매가$/.test(h)&&!s.includes(h))s.push(h)});return s}
-function calcPrice(cost,pct){let v=RL.mode==="margin"?cost/(1-pct/100):cost*(1+pct/100);const u=Number(RL.unit)||1;v=RL.round==="ceil"?Math.ceil(v/u-1e-9)*u:RL.round==="floor"?Math.floor(v/u+1e-9)*u:Math.round(v/u)*u;return v}
-function rlOk(n){return isFinite(n)&&n>0&&(RL.mode!=="margin"||n<100)}
+function rlBaseName(){return RL.mode==="cons"?"소비자가":RL.mode==="s10"?"판매가 10":"입고단가"}
+function rlBaseIdx(H){return RL.mode==="cons"?H.findIndex(x=>String(x).trim()==="소비자가"):RL.mode==="s10"?H.findIndex(x=>String(x).trim()==="판매가 10"):colOf(H,NAMES.cost)}
+function rlSign(){return RL.mode==="margin"?"마진 ":RL.mode==="markup"?"+":"할인 "}
+function calcPrice(cost,pct){let v=RL.mode==="margin"?cost/(1-pct/100):(RL.mode==="cons"||RL.mode==="s10")?cost*(1-pct/100):cost*(1+pct/100);const u=Number(RL.unit)||1;v=RL.round==="ceil"?Math.ceil(v/u-1e-9)*u:RL.round==="floor"?Math.floor(v/u+1e-9)*u:Math.round(v/u)*u;return v}
+function rlOk(n){return isFinite(n)&&n>0&&(RL.mode==="markup"||n<100)}
 function dcInfo(){$("dcInfo").textContent=`저장된 앱할인가 ${DCM.size.toLocaleString()}건`}
 $("dcClear").onclick=async()=>{if(!DCM.size){toast("지울 할인가가 없습니다.");return}if(!confirm("앱할인가 "+DCM.size+"건을 모두 지울까요?"))return;DCM=new Map();await dcSave();dcInfo();toast("앱할인가를 모두 지웠습니다.")};
 function spRender(){dcInfo();
   $("rlMode").value=RL.mode;$("rlUnit").value=String(RL.unit);$("rlRound").value=RL.round;
   $("rlTab").innerHTML=tgtCols().map(c=>{const p=RL.pct[c];return `<tr><td><b>${esc(c)}</b></td><td><input class="rlin" data-c="${esc(c)}" type="number" inputmode="decimal" step="0.1" placeholder="사용 안 함" value="${p===undefined?"":p}"> %</td><td class="small" data-ex="${esc(c)}"></td></tr>`}).join("");
   spEx()}
-function spEx(){const cost=1000;document.querySelectorAll("#rlTab td[data-ex]").forEach(td=>{const p=RL.pct[td.dataset.ex];td.textContent=p?`예) 입고단가 ${cost.toLocaleString()}원 → ${calcPrice(cost,p).toLocaleString()}원`:""});
+function spEx(){const cost=1000;document.querySelectorAll("#rlTab td[data-ex]").forEach(td=>{const p=RL.pct[td.dataset.ex];td.textContent=p?`예) ${rlBaseName()} ${cost.toLocaleString()}원 → ${calcPrice(cost,p).toLocaleString()}원`:""});
   const n=Object.keys(RL.pct).length;$("rlEx").textContent=n?`지금 ${n}개 가격에 자동 계산이 적용됩니다. (0%는 입력할 수 없고, 비우면 해제됩니다)`:"아직 정한 %가 없습니다. 칸에 숫자를 넣으면 상품 수정 때 자동으로 계산됩니다."}
 $("rlTab").addEventListener("change",e=>{const t=e.target;if(!t.classList.contains("rlin"))return;const c=t.dataset.c,v=t.value.trim();
   if(v===""){delete RL.pct[c]}
-  else{const n=Number(v);if(!rlOk(n)){toast(n===0?"0%는 입력할 수 없습니다. (사용하지 않으려면 비워 두세요)":RL.mode==="margin"&&n>=100?"마진율은 100% 미만으로 입력하세요.":"0보다 큰 숫자를 입력하세요.",3500);t.value=RL.pct[c]===undefined?"":RL.pct[c];return}RL.pct[c]=n}
+  else{const n=Number(v);if(!rlOk(n)){toast(n===0?"0%는 입력할 수 없습니다. (사용하지 않으려면 비워 두세요)":RL.mode!=="markup"&&n>=100?(RL.mode==="margin"?"마진율":"할인율")+"은 100% 미만으로 입력하세요.":"0보다 큰 숫자를 입력하세요.",3500);t.value=RL.pct[c]===undefined?"":RL.pct[c];return}RL.pct[c]=n}
   rlSave();spEx()});
-$("rlMode").onchange=()=>{RL.mode=$("rlMode").value;if(RL.mode==="margin"){for(const c of Object.keys(RL.pct))if(RL.pct[c]>=100){delete RL.pct[c]}}rlSave();spRender()};
+$("rlMode").onchange=()=>{RL.mode=$("rlMode").value;if(RL.mode!=="markup"){for(const c of Object.keys(RL.pct))if(RL.pct[c]>=100){delete RL.pct[c]}}rlSave();spRender()};
 $("rlUnit").onchange=()=>{RL.unit=Number($("rlUnit").value);rlSave();spEx()};
 $("rlRound").onchange=()=>{RL.round=$("rlRound").value;rlSave();spEx()};
 $("btnSp").onclick=()=>{spRender();info();edInfo();$("sp").classList.add("on");$("sp").scrollTop=0};
@@ -1017,7 +1020,7 @@ let PCL=[],pcKind="",pcLastB="";
 try{PCL=JSON.parse(localStorage.getItem("pcList")||"[]");if(!Array.isArray(PCL))PCL=[];pcKind=localStorage.getItem("pcKind")||""}catch(e){PCL=[]}
 function pcSave(){try{localStorage.setItem("pcList",JSON.stringify(PCL))}catch(e){}}
 function pcKindNow(){let k=pcKind||PRICE;if(!k||k==="*"){const c=priceCols();k=c.includes("판매가")?"판매가":(c[0]||"판매가")}return k}
-function pcFill(){const sel=$("pcSel");if(!sel)return;const cols=priceCols().filter(c=>c!==DISC||DCM.size);let h='<option value="">대표 판매가와 같음</option>';cols.forEach(c=>h+=`<option value="${esc(c)}">${esc(c)}</option>`);sel.innerHTML=h;sel.value=cols.includes(pcKind)?pcKind:""}
+function pcFill(){const sel=$("pcSel");if(!sel)return;const cols=priceCols().filter(c=>c!==DISC||DCM.size);let h='<option value="">조회POP에 쓸 대표 가격과 같음</option>';cols.forEach(c=>h+=`<option value="${esc(c)}">${esc(c)}</option>`);sel.innerHTML=h;sel.value=cols.includes(pcKind)?pcKind:""}
 function pcNum(v){if(v===undefined||v===null||v==="")return null;const n=Number(String(v).replace(/,/g,""));return isFinite(n)?n:null}
 function pcPick(row,H,kind,b){if(kind===DISC)return pcNum(DCM.get(String(b)));if(!row)return null;const i=H.findIndex((h,j)=>j>=2&&String(h)===kind);return i>=0?pcNum(row[i]):null}
 function pcResolve(b,kind){
